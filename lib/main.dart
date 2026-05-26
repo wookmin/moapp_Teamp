@@ -19,6 +19,14 @@ class TeamProjectApp extends StatelessWidget {
     return MaterialApp(
       title: 'Team Project',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1D8B5B),
+          surface: const Color(0xFFF5F7F2),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF5F7F2),
+        useMaterial3: true,
+      ),
       initialRoute: '/',
       routes: {
         '/': (context) => const DashboardScreen(),
