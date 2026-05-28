@@ -30,8 +30,7 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar:
-          const AppBottomNavigationBar(currentRoute: '/'),
+      bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
@@ -75,8 +74,8 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => Navigator.of(context)
-                    .pushNamed('/expiry-management'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/expiry-management'),
                 child: const Text('모두 보기'),
               ),
             ],
@@ -89,7 +88,7 @@ class DashboardScreen extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _urgentFoods.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              separatorBuilder: (context, index) => const SizedBox(width: 14),
               itemBuilder: (context, index) =>
                   _UrgentFoodCard(food: _urgentFoods[index]),
             ),
@@ -137,15 +136,9 @@ class _FreshnessGaugeCard extends StatelessWidget {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      _LegendDot(
-                        color: colorScheme.primary,
-                        label: '최적',
-                      ),
+                      _LegendDot(color: colorScheme.primary, label: '최적'),
                       const SizedBox(width: 16),
-                      const _LegendDot(
-                        color: Color(0xFFC0392B),
-                        label: '위험',
-                      ),
+                      const _LegendDot(color: Color(0xFFC0392B), label: '위험'),
                     ],
                   ),
                 ],
@@ -161,15 +154,15 @@ class _FreshnessGaugeCard extends StatelessWidget {
 }
 
 class _CircularScore extends StatelessWidget {
-  const _CircularScore({required this.score, this.size = 96});
+  const _CircularScore({required this.score});
 
   final int score;
-  final double size;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    const size = 96.0;
 
     return SizedBox(
       width: size,
@@ -184,8 +177,7 @@ class _CircularScore extends StatelessWidget {
               value: score / 100,
               strokeWidth: 8,
               backgroundColor: colorScheme.surfaceContainerHighest,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
             ),
           ),
           Text(
@@ -215,16 +207,10 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -338,7 +324,6 @@ class _AiRecipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Container(
       width: double.infinity,

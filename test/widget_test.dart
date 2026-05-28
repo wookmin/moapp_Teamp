@@ -1,30 +1,34 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:teamproject/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('login screen opens and navigates to profile', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const TeamProjectApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('냉장고 관리를\n다시 이어가세요'), findsOneWidget);
+    expect(find.text('로그인'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.tap(find.text('로그인'));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('신선도 게이지'), findsOneWidget);
+
+    await tester.tap(find.text('마이페이지'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Elena Greenwell'), findsOneWidget);
+    expect(find.text('84%'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('냉장고 설정'),
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    expect(find.text('냉장고 설정'), findsOneWidget);
   });
 }
