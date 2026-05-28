@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../repositories/app_repositories.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -9,8 +11,20 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _showEmailForm = false;
+  bool _isSignUp = false;
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _goToDashboard() {
     Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
@@ -20,6 +34,67 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _showEmailForm = true;
     });
+  }
+
+  Future<void> _runAuthAction(Future<void> Function() action) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await action();
+      if (!mounted) {
+        return;
+      }
+      _goToDashboard();
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      final message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '오류가 발생했습니다. 다시 시도해주세요.';
+      setState(() {
+        _errorMessage = message;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithEmail() {
+    return _runAuthAction(() async {
+      await AppRepositories.auth.signInWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    });
+  }
+
+  Future<void> _createUserWithEmail() {
+    return _runAuthAction(() async {
+      await AppRepositories.auth.createUserWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    });
+  }
+
+  Future<void> _signInWithKakao() {
+    return _runAuthAction(AppRepositories.auth.signInWithKakao);
+  }
+
+  Future<void> _signInWithGoogle() {
+    return _runAuthAction(AppRepositories.auth.signInWithGoogle);
+  }
+
+  Future<void> _signInWithApple() {
+    return _runAuthAction(AppRepositories.auth.signInWithApple);
   }
 
   @override
@@ -60,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
               icon: Icons.chat_bubble_rounded,
               backgroundColor: const Color(0xFFFFE812),
               foregroundColor: const Color(0xFF241E1F),
-              onPressed: _goToDashboard,
+              onPressed: _isLoading ? null : _signInWithKakao,
             ),
             const SizedBox(height: 12),
             _SocialLoginButton(
@@ -68,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
               icon: Icons.g_mobiledata_rounded,
               backgroundColor: Colors.grey,
               foregroundColor: Colors.white,
-              onPressed: _goToDashboard,
+              onPressed: _isLoading ? null : _signInWithGoogle,
             ),
             const SizedBox(height: 12),
             _SocialLoginButton(
@@ -76,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
               icon: Icons.apple_rounded,
               backgroundColor: colorScheme.onSurface,
               foregroundColor: colorScheme.surface,
-              onPressed: _goToDashboard,
+              onPressed: _isLoading ? null : _signInWithApple,
             ),
             const SizedBox(height: 28),
             Row(
@@ -113,13 +188,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       key: const ValueKey('email-form'),
                       padding: const EdgeInsets.only(top: 18),
                       child: _EmailLoginForm(
+                        emailController: _emailController,
+                        passwordController: _passwordController,
                         obscurePassword: _obscurePassword,
+                        isLoading: _isLoading,
+                        isSignUp: _isSignUp,
+                        errorMessage: _errorMessage,
                         onTogglePasswordVisibility: () {
                           setState(() {
                             _obscurePassword = !_obscurePassword;
                           });
                         },
-                        onSubmit: _goToDashboard,
+                        onSubmit: _isSignUp ? _createUserWithEmail : _signInWithEmail,
+                        onToggleSignUp: () {
+                          setState(() {
+                            _isSignUp = !_isSignUp;
+                            _errorMessage = null;
+                          });
+                        },
                       ),
                     )
                   : const SizedBox.shrink(key: ValueKey('empty-email-form')),
@@ -133,14 +219,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
 class _EmailLoginForm extends StatelessWidget {
   const _EmailLoginForm({
+    required this.emailController,
+    required this.passwordController,
     required this.obscurePassword,
+    required this.isLoading,
+    required this.isSignUp,
     required this.onTogglePasswordVisibility,
     required this.onSubmit,
+    required this.onToggleSignUp,
+    this.errorMessage,
   });
 
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
   final bool obscurePassword;
+  final bool isLoading;
+  final bool isSignUp;
   final VoidCallback onTogglePasswordVisibility;
-  final VoidCallback onSubmit;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onToggleSignUp;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +247,7 @@ class _EmailLoginForm extends StatelessWidget {
     return Column(
       children: [
         TextField(
+          controller: emailController,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           decoration: _inputDecoration(
@@ -159,6 +258,7 @@ class _EmailLoginForm extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         TextField(
+          controller: passwordController,
           obscureText: obscurePassword,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => onSubmit(),
@@ -178,21 +278,51 @@ class _EmailLoginForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
+        if (errorMessage != null) ...[
+          Text(
+            errorMessage!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         FilledButton(
-          onPressed: onSubmit,
+          onPressed: isLoading ? null : onSubmit,
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(56),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
           ),
-          child: const Text('로그인'),
+          child: isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(isSignUp ? '회원가입' : '로그인'),
         ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: () {},
-          style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
-          child: const Text('비밀번호 찾기'),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isSignUp ? '이미 계정이 있으신가요?' : '계정이 없으신가요?',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            TextButton(
+              onPressed: onToggleSignUp,
+              style: TextButton.styleFrom(
+                foregroundColor: colorScheme.primary,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(isSignUp ? '로그인' : '회원가입'),
+            ),
+          ],
         ),
       ],
     );
@@ -233,7 +363,7 @@ class _SocialLoginButton extends StatelessWidget {
   final IconData icon;
   final Color backgroundColor;
   final Color foregroundColor;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
