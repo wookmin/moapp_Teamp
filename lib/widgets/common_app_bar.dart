@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const CommonAppBar({
-    super.key,
-  });
+  const CommonAppBar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -21,10 +19,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       titleSpacing: 20,
-      title: SvgPicture.asset(
-        'assets/appLogo.svg',
-        height: 30,
-      ),
+      title: SvgPicture.asset('assets/appLogo.svg', height: 30),
       centerTitle: false,
       actions: [
         Padding(

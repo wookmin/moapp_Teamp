@@ -1,22 +1,60 @@
 import 'package:flutter/material.dart';
 
+import '../../models/community_post.dart';
+import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
+import '../../widgets/empty_state_view.dart';
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
 
-  static const List<_CommunityPost> _posts = [
-    _CommunityPost(title: '딸기 오래 보관하는 방법', author: '냉장고연구소', excerpt: '물세척은 미루고, 키친타월을 한 장 깔아 습기를 먼저 잡아주세요.', badge: '인기'),
-    _CommunityPost(title: '우유 유통기한 임박할 때 활용 레시피', author: '홈쿠킹러버', excerpt: '크림 파스타, 프렌치토스트처럼 빠르게 소진 가능한 메뉴를 추천해요.', badge: '최신'),
-    _CommunityPost(title: '아스파라거스 식감 살리는 보관 팁', author: '채소마스터', excerpt: '세워서 보관하면 수분이 아래로 몰리지 않아 훨씬 오래 신선합니다.', badge: '내 글'),
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  static const List<_CommunityFilter> _filters = [
+    _CommunityFilter(label: '최신', value: 'latest'),
+    _CommunityFilter(label: '인기', value: 'popular'),
+    _CommunityFilter(label: '내 글', value: 'mine'),
   ];
+
+  String _selectedFilter = _filters.first.value;
+  late Future<List<CommunityPost>> _postsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _postsFuture = AppRepositories.community.fetchPosts(
+      filter: _selectedFilter,
+    );
+  }
+
+  void _selectFilter(String filter) {
+    if (_selectedFilter == filter) {
+      return;
+    }
+
+    setState(() {
+      _selectedFilter = filter;
+      _postsFuture = AppRepositories.community.fetchPosts(filter: filter);
+    });
+  }
+
+  String get _selectedFilterLabel {
+    return _filters
+        .firstWhere((filter) => filter.value == _selectedFilter)
+        .label;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/community'),
+      bottomNavigationBar: const AppBottomNavigationBar(
+        currentRoute: '/community',
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         child: const Icon(Icons.edit_rounded),
@@ -29,17 +67,44 @@ class CommunityScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
-          const Wrap(
+          Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: [
-              _CommunityChip(label: '최신', selected: true),
-              _CommunityChip(label: '인기'),
-              _CommunityChip(label: '내 글'),
-            ],
+            children: _filters
+                .map(
+                  (filter) => _CommunityChip(
+                    label: filter.label,
+                    selected: _selectedFilter == filter.value,
+                    onTap: () => _selectFilter(filter.value),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 20),
-          ..._posts.map((post) => _CommunityPostCard(post: post)),
+          FutureBuilder<List<CommunityPost>>(
+            future: _postsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final posts = snapshot.data ?? const <CommunityPost>[];
+
+              if (posts.isEmpty) {
+                return EmptyStateView(
+                  icon: Icons.forum_outlined,
+                  title: '$_selectedFilterLabel 보관 팁이 없습니다',
+                  message: 'Firebase 커뮤니티 컬렉션을 연결하면 선택한 필터에 맞는 글이 표시됩니다.',
+                );
+              }
+
+              return Column(
+                children: posts
+                    .map((post) => _CommunityPostCard(post: post))
+                    .toList(),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -49,27 +114,35 @@ class CommunityScreen extends StatelessWidget {
 class _CommunityChip extends StatelessWidget {
   const _CommunityChip({
     required this.label,
+    required this.onTap,
     this.selected = false,
   });
 
   final String label;
+  final VoidCallback onTap;
   final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: selected ? colorScheme.primary : colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w700,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? colorScheme.primary : colorScheme.surface,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: selected
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -77,11 +150,9 @@ class _CommunityChip extends StatelessWidget {
 }
 
 class _CommunityPostCard extends StatelessWidget {
-  const _CommunityPostCard({
-    required this.post,
-  });
+  const _CommunityPostCard({required this.post});
 
-  final _CommunityPost post;
+  final CommunityPost post;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +174,7 @@ class _CommunityPostCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                _CommunityChip(label: post.badge, selected: post.badge == '최신'),
+                _PostBadge(label: post.badge),
               ],
             ),
             const SizedBox(height: 8),
@@ -118,14 +189,8 @@ class _CommunityPostCard extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('상세 보기'),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('공유'),
-                ),
+                TextButton(onPressed: () {}, child: const Text('상세 보기')),
+                TextButton(onPressed: () {}, child: const Text('공유')),
               ],
             ),
           ],
@@ -135,16 +200,35 @@ class _CommunityPostCard extends StatelessWidget {
   }
 }
 
-class _CommunityPost {
-  const _CommunityPost({
-    required this.title,
-    required this.author,
-    required this.excerpt,
-    required this.badge,
-  });
+class _PostBadge extends StatelessWidget {
+  const _PostBadge({required this.label});
 
-  final String title;
-  final String author;
-  final String excerpt;
-  final String badge;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _CommunityFilter {
+  const _CommunityFilter({required this.label, required this.value});
+
+  final String label;
+  final String value;
 }

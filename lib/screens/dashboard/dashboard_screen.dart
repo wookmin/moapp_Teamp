@@ -1,108 +1,97 @@
 import 'package:flutter/material.dart';
 
+import '../../models/food_item.dart';
+import '../../models/freshness_summary.dart';
+import '../../models/recipe.dart';
+import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
+import '../../widgets/empty_state_view.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
-  static const int _freshnessScore = 82;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const CommonAppBar(),
+      bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
+      body: FutureBuilder<FreshnessSummary>(
+        future: AppRepositories.dashboard.fetchFreshnessSummary(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-  static const List<_UrgentFood> _urgentFoods = [
-    _UrgentFood(
-      name: '어린 시금치',
-      expiryLabel: '유통기한 1일 남음',
-      tag: '긴급',
-      isUrgent: true,
-    ),
-    _UrgentFood(
-      name: '그릭 요거트',
-      expiryLabel: '유통기한 3일 남음',
-      tag: '주의',
-      isUrgent: false,
-    ),
-  ];
+          final summary =
+              snapshot.data ?? const FreshnessSummary(score: 0, urgentCount: 0);
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
+              if (!summary.hasConnectedData)
+                const EmptyStateView(
+                  icon: Icons.kitchen_outlined,
+                  title: '냉장고 데이터 연결 대기 중',
+                  message: 'Firebase를 연결하면 신선도, 임박 품목, AI 추천 레시피가 이곳에 표시됩니다.',
+                )
+              else ...[
+                _DashboardHeader(summary: summary),
+                const SizedBox(height: 20),
+                _FreshnessGaugeCard(score: summary.score),
+                const SizedBox(height: 24),
+                _UrgentFoodSection(foods: summary.urgentFoods),
+                const SizedBox(height: 24),
+                _AiRecipeCard(recipe: summary.recommendedRecipe),
+              ],
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.add_rounded),
+      ),
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({required this.summary});
+
+  final FreshnessSummary summary;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        children: [
-          // 헤더: 우리 집 주방 82%
-          RichText(
-            text: TextSpan(
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: colorScheme.onSurface,
-              ),
-              children: [
-                const TextSpan(text: '우리 집 주방 '),
-                TextSpan(
-                  text: '$_freshnessScore%',
-                  style: TextStyle(color: colorScheme.primary),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: colorScheme.onSurface,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '48시간 이내에 소비해야 할 식재료가 12개 있습니다.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // 신선도 게이지 카드
-          _FreshnessGaugeCard(score: _freshnessScore),
-          const SizedBox(height: 24),
-
-          // 빨리 먹어야 할 음식 헤더
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '빨리 먹어야 할 음식',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed('/expiry-management'),
-                child: const Text('모두 보기'),
+              const TextSpan(text: '우리 집 주방 '),
+              TextSpan(
+                text: '${summary.score}%',
+                style: TextStyle(color: colorScheme.primary),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-
-          // 가로 스크롤 음식 카드
-          SizedBox(
-            height: 168,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _urgentFoods.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 14),
-              itemBuilder: (context, index) =>
-                  _UrgentFoodCard(food: _urgentFoods[index]),
-            ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '48시간 이내에 소비해야 할 식재료가 ${summary.urgentCount}개 있습니다.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 24),
-
-          // AI 레시피 추천 카드
-          const _AiRecipeCard(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add_rounded),
-      ),
+        ),
+      ],
     );
   }
 }
@@ -115,7 +104,6 @@ class _FreshnessGaugeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Card(
       elevation: 0,
@@ -124,24 +112,11 @@ class _FreshnessGaugeCard extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '신선도 게이지',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _LegendDot(color: colorScheme.primary, label: '최적'),
-                      const SizedBox(width: 16),
-                      const _LegendDot(color: Color(0xFFC0392B), label: '위험'),
-                    ],
-                  ),
-                ],
+              child: Text(
+                '신선도 게이지',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -193,24 +168,52 @@ class _CircularScore extends StatelessWidget {
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
+class _UrgentFoodSection extends StatelessWidget {
+  const _UrgentFoodSection({required this.foods});
 
-  final Color color;
-  final String label;
+  final List<FoodItem> foods;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '빨리 먹어야 할 음식',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/expiry-management'),
+              child: const Text('모두 보기'),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 12),
+        if (foods.isEmpty)
+          const EmptyStateView(
+            icon: Icons.event_available_outlined,
+            title: '임박 품목이 없습니다',
+            message: 'Firebase 품목 데이터를 연결하면 소비기한이 가까운 식재료가 표시됩니다.',
+          )
+        else
+          SizedBox(
+            height: 168,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: foods.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 14),
+              itemBuilder: (context, index) =>
+                  _UrgentFoodCard(food: foods[index]),
+            ),
+          ),
       ],
     );
   }
@@ -219,7 +222,7 @@ class _LegendDot extends StatelessWidget {
 class _UrgentFoodCard extends StatelessWidget {
   const _UrgentFoodCard({required this.food});
 
-  final _UrgentFood food;
+  final FoodItem food;
 
   @override
   Widget build(BuildContext context) {
@@ -238,80 +241,42 @@ class _UrgentFoodCard extends StatelessWidget {
         elevation: 0,
         clipBehavior: Clip.antiAlias,
         color: highlight,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 이미지 placeholder
-            Container(
-              height: 86,
-              width: double.infinity,
-              color: colorScheme.surfaceContainerHighest,
-              child: Icon(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
                 Icons.restaurant_rounded,
                 color: colorScheme.onSurfaceVariant,
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const Spacer(),
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          food.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  Expanded(
+                    child: Text(
+                      food.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: tagColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          food.tag,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: tagColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.schedule_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          food.expiryLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _Tag(label: food.statusLabel, color: tagColor),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                food.expiryLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -319,10 +284,20 @@ class _UrgentFoodCard extends StatelessWidget {
 }
 
 class _AiRecipeCard extends StatelessWidget {
-  const _AiRecipeCard();
+  const _AiRecipeCard({required this.recipe});
+
+  final Recipe? recipe;
 
   @override
   Widget build(BuildContext context) {
+    if (recipe == null) {
+      return const EmptyStateView(
+        icon: Icons.auto_awesome_outlined,
+        title: 'AI 추천 준비 중',
+        message: '냉장고 재료, KAMIS 가격 동향, 공공 레시피 DB를 연결하면 오늘의 추천이 표시됩니다.',
+      );
+    }
+
     final theme = Theme.of(context);
 
     return Container(
@@ -335,27 +310,8 @@ class _AiRecipeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                size: 18,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'AI 추천',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           Text(
-            '시금치 파스타 어떠세요?',
+            recipe!.title,
             style: theme.textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -363,21 +319,11 @@ class _AiRecipeCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '시금치가 시들기 전에 15분 만에 완성하는 크리미 시금치 파스타를 '
-            '만들 수 있는 모든 재료가 있습니다.',
+            recipe!.summary,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Colors.white.withValues(alpha: 0.78),
               height: 1.5,
             ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () {},
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1B6B47),
-            ),
-            child: const Text('요리하기'),
           ),
         ],
       ),
@@ -385,16 +331,27 @@ class _AiRecipeCard extends StatelessWidget {
   }
 }
 
-class _UrgentFood {
-  const _UrgentFood({
-    required this.name,
-    required this.expiryLabel,
-    required this.tag,
-    required this.isUrgent,
-  });
+class _Tag extends StatelessWidget {
+  const _Tag({required this.label, required this.color});
 
-  final String name;
-  final String expiryLabel;
-  final String tag;
-  final bool isUrgent;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }
