@@ -1,56 +1,70 @@
 import 'package:flutter/material.dart';
 
+import '../../models/community_post.dart';
+import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
+import '../../widgets/empty_state_view.dart';
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
-
-  static const List<_CommunityPost> _posts = [
-    _CommunityPost(title: '딸기 오래 보관하는 방법', author: '냉장고연구소', excerpt: '물세척은 미루고, 키친타월을 한 장 깔아 습기를 먼저 잡아주세요.', badge: '인기'),
-    _CommunityPost(title: '우유 유통기한 임박할 때 활용 레시피', author: '홈쿠킹러버', excerpt: '크림 파스타, 프렌치토스트처럼 빠르게 소진 가능한 메뉴를 추천해요.', badge: '최신'),
-    _CommunityPost(title: '아스파라거스 식감 살리는 보관 팁', author: '채소마스터', excerpt: '세워서 보관하면 수분이 아래로 몰리지 않아 훨씬 오래 신선합니다.', badge: '내 글'),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/community'),
+      bottomNavigationBar: const AppBottomNavigationBar(
+        currentRoute: '/community',
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         child: const Icon(Icons.edit_rounded),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        children: [
-          Text(
-            '실사용 보관 팁과 레시피 아이디어를 탐색하고, 내 노하우도 공유할 수 있어요.',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          const Wrap(
-            spacing: 10,
-            runSpacing: 10,
+      body: FutureBuilder<List<CommunityPost>>(
+        future: AppRepositories.community.fetchPosts(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final posts = snapshot.data ?? const <CommunityPost>[];
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
-              _CommunityChip(label: '최신', selected: true),
-              _CommunityChip(label: '인기'),
-              _CommunityChip(label: '내 글'),
+              Text(
+                '실사용 보관 팁과 레시피 아이디어를 탐색하고, 내 노하우도 공유할 수 있어요.',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 16),
+              const Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _CommunityChip(label: '최신', selected: true),
+                  _CommunityChip(label: '인기'),
+                  _CommunityChip(label: '내 글'),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (posts.isEmpty)
+                const EmptyStateView(
+                  icon: Icons.forum_outlined,
+                  title: '아직 등록된 보관 팁이 없습니다',
+                  message: 'Firebase 커뮤니티 컬렉션을 연결하면 사용자 글과 저장 팁이 표시됩니다.',
+                )
+              else
+                ...posts.map((post) => _CommunityPostCard(post: post)),
             ],
-          ),
-          const SizedBox(height: 20),
-          ..._posts.map((post) => _CommunityPostCard(post: post)),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
 class _CommunityChip extends StatelessWidget {
-  const _CommunityChip({
-    required this.label,
-    this.selected = false,
-  });
+  const _CommunityChip({required this.label, this.selected = false});
 
   final String label;
   final bool selected;
@@ -68,7 +82,9 @@ class _CommunityChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+          color: selected
+              ? colorScheme.onPrimary
+              : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -77,11 +93,9 @@ class _CommunityChip extends StatelessWidget {
 }
 
 class _CommunityPostCard extends StatelessWidget {
-  const _CommunityPostCard({
-    required this.post,
-  });
+  const _CommunityPostCard({required this.post});
 
-  final _CommunityPost post;
+  final CommunityPost post;
 
   @override
   Widget build(BuildContext context) {
@@ -118,14 +132,8 @@ class _CommunityPostCard extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('상세 보기'),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('공유'),
-                ),
+                TextButton(onPressed: () {}, child: const Text('상세 보기')),
+                TextButton(onPressed: () {}, child: const Text('공유')),
               ],
             ),
           ],
@@ -133,18 +141,4 @@ class _CommunityPostCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CommunityPost {
-  const _CommunityPost({
-    required this.title,
-    required this.author,
-    required this.excerpt,
-    required this.badge,
-  });
-
-  final String title;
-  final String author;
-  final String excerpt;
-  final String badge;
 }

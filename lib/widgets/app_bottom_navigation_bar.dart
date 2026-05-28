@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppBottomNavigationBar extends StatelessWidget {
-  const AppBottomNavigationBar({
-    required this.currentRoute,
-    super.key,
-  });
+  const AppBottomNavigationBar({required this.currentRoute, super.key});
 
   final String currentRoute;
 
@@ -51,9 +48,7 @@ class AppBottomNavigationBar extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: colorScheme.outlineVariant),
-          ),
+          border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
           boxShadow: [
             BoxShadow(
               color: colorScheme.shadow.withValues(alpha: 0.05),
