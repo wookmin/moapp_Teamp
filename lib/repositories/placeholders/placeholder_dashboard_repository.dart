@@ -6,6 +6,6 @@ class PlaceholderDashboardRepository implements DashboardRepository {
 
   @override
   Future<FreshnessSummary> fetchFreshnessSummary() async {
-    return const FreshnessSummary(score: 0, urgentCount: 0);
+    return const FreshnessSummary(score: 0, urgentCount: 0, totalCount: 0);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'screens/community/community_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
@@ -11,6 +12,7 @@ import 'services/firebase_bootstrap.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   await FirebaseBootstrap.initialize();
   runApp(const TeamProjectApp());
 }

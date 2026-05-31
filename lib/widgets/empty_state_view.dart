@@ -6,11 +6,13 @@ class EmptyStateView extends StatelessWidget {
     required this.message,
     super.key,
     this.icon = Icons.dataset_outlined,
+    this.action,
   });
 
   final String title;
   final String message;
   final IconData icon;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,10 @@ class EmptyStateView extends StatelessWidget {
               height: 1.45,
             ),
           ),
+          if (action != null) ...[
+            const SizedBox(height: 12),
+            action!,
+          ],
         ],
       ),
     );

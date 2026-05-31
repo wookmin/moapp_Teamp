@@ -2,7 +2,10 @@ class Recipe {
   const Recipe({
     required this.title,
     required this.summary,
+    this.id,
     this.imageUrl,
+    this.cookingMethod,
+    this.category,
     this.calories,
     this.protein,
     this.fat,
@@ -14,7 +17,10 @@ class Recipe {
 
   final String title;
   final String summary;
+  final String? id;
   final String? imageUrl;
+  final String? cookingMethod;
+  final String? category;
   final int? calories;
   final double? protein;
   final double? fat;
