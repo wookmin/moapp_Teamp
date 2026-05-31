@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../models/food_item.dart';
 import '../models/price_trend.dart';
 import '../models/recipe.dart';
@@ -42,15 +40,27 @@ class RecipeRecommendationService {
     }
 
     return _aiService.recommendRecipe(
-      expiringFoods: prioritizedFoods,
+      fridgeFoods: prioritizedFoods,
       recipeCandidates: rankedRecipes.take(5).toList(),
       priceTrends: priceTrends,
     );
   }
 
   List<FoodItem> _prioritizeFoods(List<FoodItem> foods) {
-    final sorted = [...foods]..sort((a, b) => a.daysLeft.compareTo(b.daysLeft));
+    final sorted = [...foods]
+      ..sort((a, b) {
+        final urgentCompare = _urgentRank(a).compareTo(_urgentRank(b));
+        if (urgentCompare != 0) {
+          return urgentCompare;
+        }
+
+        return a.daysLeft.compareTo(b.daysLeft);
+      });
     return sorted.take(8).toList();
+  }
+
+  int _urgentRank(FoodItem food) {
+    return food.isUrgent ? 0 : 1;
   }
 
   List<Recipe> _rankRecipes({

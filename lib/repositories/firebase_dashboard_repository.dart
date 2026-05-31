@@ -27,12 +27,10 @@ class FirebaseDashboardRepository implements DashboardRepository {
     final freshCount = items.where((f) => f.daysLeft > 7).length;
     final score = ((freshCount / items.length) * 100).round();
 
-    final targetFoods = urgentFoods.isNotEmpty ? urgentFoods : items;
-
     String? recipeError;
     Recipe? recipe;
     try {
-      recipe = await _recommendationService.recommendRecipe(foods: targetFoods);
+      recipe = await _recommendationService.recommendRecipe(foods: items);
     } catch (e) {
       recipeError = e.toString();
     }

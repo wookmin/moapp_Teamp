@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -19,11 +18,11 @@ class AiRecommendationService {
       'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent';
 
   Future<Recipe?> recommendRecipe({
-    required List<FoodItem> expiringFoods,
+    required List<FoodItem> fridgeFoods,
     required List<Recipe> recipeCandidates,
     required List<PriceTrend> priceTrends,
   }) async {
-    if (expiringFoods.isEmpty || recipeCandidates.isEmpty) return null;
+    if (fridgeFoods.isEmpty || recipeCandidates.isEmpty) return null;
 
     final apiKey = dotenv.env['GEMINI_API_KEY']?.trim();
 
@@ -32,7 +31,7 @@ class AiRecommendationService {
     }
 
     final prompt = _buildPrompt(
-      expiringFoods: expiringFoods,
+      fridgeFoods: fridgeFoods,
       recipeCandidates: recipeCandidates,
       priceTrends: priceTrends,
     );
@@ -107,11 +106,16 @@ class AiRecommendationService {
   }
 
   String _buildPrompt({
-    required List<FoodItem> expiringFoods,
+    required List<FoodItem> fridgeFoods,
     required List<Recipe> recipeCandidates,
     required List<PriceTrend> priceTrends,
   }) {
-    final foodList = expiringFoods
+    final urgentFoodList = fridgeFoods
+        .where((food) => food.isUrgent)
+        .map((f) => '- ${f.name} (${f.expiryLabel})')
+        .join('\n');
+    final otherFoodList = fridgeFoods
+        .where((food) => !food.isUrgent)
         .map((f) => '- ${f.name} (${f.expiryLabel})')
         .join('\n');
     final priceTrendList = priceTrends.isEmpty
@@ -143,8 +147,11 @@ ${entry.key + 1}. ${recipe.title}
 당신은 냉장고 재료 기반 한식 레시피 추천 도우미입니다.
 아래 공공 레시피 후보 중에서만 1개를 골라 추천해주세요. 후보에 없는 새 레시피를 만들면 안 됩니다.
 
-냉장고 재료:
-$foodList
+소비기한 임박 재료:
+${urgentFoodList.isEmpty ? '없음' : urgentFoodList}
+
+함께 활용 가능한 다른 냉장고 재료:
+${otherFoodList.isEmpty ? '없음' : otherFoodList}
 
 KAMIS 가격 동향:
 $priceTrendList
