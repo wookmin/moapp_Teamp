@@ -40,71 +40,9 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
     }
   }
 
-  Future<void> _showAddDialog() async {
-    final nameController = TextEditingController();
-    DateTime? selectedDate;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('식품 추가'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '식품 이름'),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      selectedDate == null
-                          ? '소비기한 선택'
-                          : '${selectedDate!.year}.${selectedDate!.month.toString().padLeft(2, '0')}.${selectedDate!.day.toString().padLeft(2, '0')}',
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: DateTime.now().add(const Duration(days: 7)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
-                      );
-                      if (picked != null) {
-                        setDialogState(() => selectedDate = picked);
-                      }
-                    },
-                    child: const Text('날짜 선택'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('추가'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed == true &&
-        nameController.text.trim().isNotEmpty &&
-        selectedDate != null) {
-      await AppRepositories.expiry.addFoodItem(
-        name: nameController.text.trim(),
-        expiryDate: selectedDate!,
-      );
+  Future<void> _openAddFlow() async {
+    await Navigator.of(context).pushNamed('/add-food');
+    if (mounted) {
       _refresh();
     }
   }
@@ -120,7 +58,7 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
       appBar: const CommonAppBar(),
       bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
+        onPressed: _openAddFlow,
         child: const Icon(Icons.add_rounded),
       ),
       body: FutureBuilder<List<FoodItem>>(
@@ -201,9 +139,11 @@ class _FilterChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
+          color: selected
+              ? colorScheme.onPrimary
+              : colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

@@ -30,71 +30,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  Future<void> _showAddDialog() async {
-    final nameController = TextEditingController();
-    DateTime? selectedDate;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('식품 추가'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '식품 이름'),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      selectedDate == null
-                          ? '소비기한 선택'
-                          : '${selectedDate!.year}.${selectedDate!.month.toString().padLeft(2, '0')}.${selectedDate!.day.toString().padLeft(2, '0')}',
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: DateTime.now().add(const Duration(days: 7)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
-                      );
-                      if (picked != null) {
-                        setDialogState(() => selectedDate = picked);
-                      }
-                    },
-                    child: const Text('날짜 선택'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('추가'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed == true &&
-        nameController.text.trim().isNotEmpty &&
-        selectedDate != null) {
-      await AppRepositories.expiry.addFoodItem(
-        name: nameController.text.trim(),
-        expiryDate: selectedDate!,
-      );
+  Future<void> _openAddFlow() async {
+    await Navigator.of(context).pushNamed('/add-food');
+    if (mounted) {
       _refresh();
     }
   }
@@ -112,7 +50,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           final summary =
-              snapshot.data ?? const FreshnessSummary(score: 0, urgentCount: 0, totalCount: 0);
+              snapshot.data ??
+              const FreshnessSummary(score: 0, urgentCount: 0, totalCount: 0);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -141,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
+        onPressed: _openAddFlow,
         child: const Icon(Icons.add_rounded),
       ),
     );
@@ -391,11 +330,11 @@ class _AiRecipeCard extends StatelessWidget {
     if (recipe == null) {
       final hasError = error != null;
       return EmptyStateView(
-        icon: hasError ? Icons.error_outline_rounded : Icons.auto_awesome_outlined,
+        icon: hasError
+            ? Icons.error_outline_rounded
+            : Icons.auto_awesome_outlined,
         title: hasError ? 'AI 추천 실패' : '오늘의 추천 레시피',
-        message: hasError
-            ? error!
-            : '식품을 추가하면 재료에 맞는\nAI 추천 레시피가 이곳에 표시돼요.',
+        message: hasError ? error! : '식품을 추가하면 재료에 맞는\nAI 추천 레시피가 이곳에 표시돼요.',
         action: TextButton.icon(
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -468,19 +407,24 @@ class _AiRecipeCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 6,
               children: recipe!.ingredients
-                  .map((ing) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(999),
+                  .map(
+                    (ing) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        ing,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
                         ),
-                        child: Text(
-                          ing,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -495,42 +439,42 @@ class _AiRecipeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ...recipe!.steps.asMap().entries.map(
-                  (e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 22,
-                          height: 22,
-                          margin: const EdgeInsets.only(right: 8, top: 1),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${e.key + 1}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      margin: const EdgeInsets.only(right: 8, top: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${e.key + 1}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Expanded(
-                          child: Text(
-                            e.value,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: Text(
+                        e.value,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
           ],
         ],
       ),

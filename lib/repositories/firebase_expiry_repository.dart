@@ -2,14 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/food_item.dart';
+import '../models/storage_type.dart';
 import 'expiry_repository.dart';
 
 class FirebaseExpiryRepository implements ExpiryRepository {
-  FirebaseExpiryRepository({
-    FirebaseFirestore? firestore,
-    FirebaseAuth? auth,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  FirebaseExpiryRepository({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -32,10 +31,14 @@ class FirebaseExpiryRepository implements ExpiryRepository {
   Future<void> addFoodItem({
     required String name,
     required DateTime expiryDate,
+    String? category,
+    StorageType storageType = StorageType.unknown,
   }) {
     return _collection.add({
       'name': name,
       'expiryDate': expiryDate.toIso8601String(),
+      'category': category,
+      'storageType': storageType.name,
     });
   }
 
