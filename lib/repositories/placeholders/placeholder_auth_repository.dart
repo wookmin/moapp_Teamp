@@ -5,6 +5,11 @@ class PlaceholderAuthRepository implements AuthRepository {
   const PlaceholderAuthRepository();
 
   @override
+  Stream<AuthUser?> authStateChanges() {
+    return const Stream<AuthUser?>.empty();
+  }
+
+  @override
   Future<AuthUser> signInWithEmail({
     required String email,
     required String password,

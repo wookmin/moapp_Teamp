@@ -10,13 +10,18 @@ class FirebaseAuthRepository implements AuthRepository {
     FirebaseAuthService? authService,
     FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
-  })  : _authService = authService ?? FirebaseAuthService(),
-        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+  }) : _authService = authService ?? FirebaseAuthService(),
+       _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+       _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   final FirebaseAuthService _authService;
   final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
+
+  @override
+  Stream<AuthUser?> authStateChanges() {
+    return _authService.authStateChanges();
+  }
 
   @override
   Future<AuthUser> signInWithEmail({
@@ -24,7 +29,10 @@ class FirebaseAuthRepository implements AuthRepository {
     required String password,
   }) async {
     try {
-      return await _authService.signInWithEmail(email: email, password: password);
+      return await _authService.signInWithEmail(
+        email: email,
+        password: password,
+      );
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthError(e.code));
     }
@@ -36,7 +44,10 @@ class FirebaseAuthRepository implements AuthRepository {
     required String password,
   }) async {
     try {
-      return await _authService.createUserWithEmail(email: email, password: password);
+      return await _authService.createUserWithEmail(
+        email: email,
+        password: password,
+      );
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthError(e.code));
     }
@@ -54,9 +65,13 @@ class FirebaseAuthRepository implements AuthRepository {
     );
 
     try {
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
       final user = userCredential.user;
-      if (user == null) throw StateError('Firebase Auth did not return a user.');
+      if (user == null) {
+        throw StateError('Firebase Auth did not return a user.');
+      }
       return AuthUser(
         id: user.uid,
         email: user.email,

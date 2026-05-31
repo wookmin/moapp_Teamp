@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'screens/auth/auth_gate.dart';
 import 'screens/community/community_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/expiry_management/expiry_management_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/profile/profile_screen.dart';
@@ -33,10 +33,10 @@ class TeamProjectApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF5F7F2),
         useMaterial3: true,
       ),
-      initialRoute: '/login',
+      initialRoute: '/',
       routes: {
+        '/': (context) => const AuthGate(),
         '/login': (context) => const LoginScreen(),
-        '/': (context) => const DashboardScreen(),
         '/expiry-management': (context) => const ExpiryManagementScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/shopping-recommendations': (context) =>

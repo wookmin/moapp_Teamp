@@ -22,7 +22,6 @@ class RecipeApiService {
         dotenv.env['MFDS_RECIPE_API_KEY']?.trim();
 
     if (apiKey == null || apiKey.isEmpty) {
-      debugPrint('[RecipeAPI] FOODSAFETY_API_KEY 또는 MFDS_RECIPE_API_KEY 없음');
       return const [];
     }
 
@@ -58,13 +57,9 @@ class RecipeApiService {
       '$_baseUrl/$apiKey/COOKRCP01/json/1/$limit/RCP_PARTS_DTLS=$encodedIngredient',
     );
 
-    debugPrint('[RecipeAPI] 후보 요청: $ingredient');
-
     final response = await _client.get(uri);
-    debugPrint('[RecipeAPI] $ingredient status: ${response.statusCode}');
 
     if (response.statusCode != 200) {
-      debugPrint('[RecipeAPI] body: ${response.body}');
       return const [];
     }
 

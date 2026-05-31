@@ -37,10 +37,6 @@ class RecipeRecommendationService {
       priceTrends: priceTrends,
     );
 
-    debugPrint(
-      '[RecipeRecommend] foods=${foods.length}, candidates=${recipeCandidates.length}, ranked=${rankedRecipes.length}',
-    );
-
     if (rankedRecipes.isEmpty) {
       return null;
     }
