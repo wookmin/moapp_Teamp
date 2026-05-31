@@ -5,7 +5,8 @@ class PlaceholderCommunityRepository implements CommunityRepository {
   const PlaceholderCommunityRepository();
 
   @override
-  Future<List<CommunityPost>> fetchPosts({String filter = 'latest'}) async {
-    return const [];
-  }
+  Future<List<CommunityPost>> fetchPosts({String filter = 'latest'}) async => const [];
+
+  @override
+  Future<void> addPost(CommunityPost post) async {}
 }

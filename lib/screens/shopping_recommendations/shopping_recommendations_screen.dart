@@ -50,9 +50,8 @@ class ShoppingRecommendationsScreen extends StatelessWidget {
               if (categories.isEmpty)
                 const EmptyStateView(
                   icon: Icons.shopping_cart_outlined,
-                  title: '추천 품목을 불러올 준비 중입니다',
-                  message:
-                      'KAMIS 가격 API와 Firebase 재고 데이터를 연결하면 제철·가격 기반 추천이 표시됩니다.',
+                  title: '추천 장보기 목록이 없어요',
+                  message: '냉장고에 식품을 추가하면\n맞춤 쇼핑 추천이 표시됩니다.',
                 )
               else
                 for (final category in categories) ...[

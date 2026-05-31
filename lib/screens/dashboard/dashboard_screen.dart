@@ -8,8 +8,96 @@ import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late Future<FreshnessSummary> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  void _refresh() {
+    setState(() {
+      _future = AppRepositories.dashboard.fetchFreshnessSummary();
+    });
+  }
+
+  Future<void> _showAddDialog() async {
+    final nameController = TextEditingController();
+    DateTime? selectedDate;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('식품 추가'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: '식품 이름'),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      selectedDate == null
+                          ? '소비기한 선택'
+                          : '${selectedDate!.year}.${selectedDate!.month.toString().padLeft(2, '0')}.${selectedDate!.day.toString().padLeft(2, '0')}',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: DateTime.now().add(const Duration(days: 7)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+                      );
+                      if (picked != null) {
+                        setDialogState(() => selectedDate = picked);
+                      }
+                    },
+                    child: const Text('날짜 선택'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('추가'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed == true &&
+        nameController.text.trim().isNotEmpty &&
+        selectedDate != null) {
+      await AppRepositories.expiry.addFoodItem(
+        name: nameController.text.trim(),
+        expiryDate: selectedDate!,
+      );
+      _refresh();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +105,7 @@ class DashboardScreen extends StatelessWidget {
       appBar: const CommonAppBar(),
       bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
       body: FutureBuilder<FreshnessSummary>(
-        future: AppRepositories.dashboard.fetchFreshnessSummary(),
+        future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
@@ -32,8 +120,8 @@ class DashboardScreen extends StatelessWidget {
               if (!summary.hasConnectedData)
                 const EmptyStateView(
                   icon: Icons.kitchen_outlined,
-                  title: '냉장고 데이터 연결 대기 중',
-                  message: 'Firebase를 연결하면 신선도, 임박 품목, AI 추천 레시피가 이곳에 표시됩니다.',
+                  title: '냉장고가 비었어요!',
+                  message: '+ 버튼을 눌러 식품을 추가하면\n신선도, 임박 품목, AI 추천 레시피가 표시됩니다.',
                 )
               else ...[
                 _DashboardHeader(summary: summary),
@@ -49,7 +137,7 @@ class DashboardScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _showAddDialog,
         child: const Icon(Icons.add_rounded),
       ),
     );
@@ -200,8 +288,8 @@ class _UrgentFoodSection extends StatelessWidget {
         if (foods.isEmpty)
           const EmptyStateView(
             icon: Icons.event_available_outlined,
-            title: '임박 품목이 없습니다',
-            message: 'Firebase 품목 데이터를 연결하면 소비기한이 가까운 식재료가 표시됩니다.',
+            title: '임박 식품이 없어요 👍',
+            message: '냉장고 속 식품이 모두 신선해요!',
           )
         else
           SizedBox(
@@ -293,8 +381,8 @@ class _AiRecipeCard extends StatelessWidget {
     if (recipe == null) {
       return const EmptyStateView(
         icon: Icons.auto_awesome_outlined,
-        title: 'AI 추천 준비 중',
-        message: '냉장고 재료, KAMIS 가격 동향, 공공 레시피 DB를 연결하면 오늘의 추천이 표시됩니다.',
+        title: '오늘의 추천 레시피',
+        message: '식품을 추가하면 재료에 맞는\nAI 추천 레시피가 이곳에 표시돼요.',
       );
     }
 

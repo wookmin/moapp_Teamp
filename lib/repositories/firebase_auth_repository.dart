@@ -1,14 +1,22 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/auth_user.dart';
 import '../services/firebase_auth_service.dart';
 import 'auth_repository.dart';
 
 class FirebaseAuthRepository implements AuthRepository {
-  FirebaseAuthRepository({FirebaseAuthService? authService})
-    : _authService = authService ?? FirebaseAuthService();
+  FirebaseAuthRepository({
+    FirebaseAuthService? authService,
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+  })  : _authService = authService ?? FirebaseAuthService(),
+        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   final FirebaseAuthService _authService;
+  final FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn;
 
   @override
   Future<AuthUser> signInWithEmail({
@@ -35,8 +43,29 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthUser> signInWithGoogle() {
-    throw Exception('Google 로그인은 준비 중입니다.');
+  Future<AuthUser> signInWithGoogle() async {
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) throw Exception('Google 로그인이 취소되었습니다.');
+
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    try {
+      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) throw StateError('Firebase Auth did not return a user.');
+      return AuthUser(
+        id: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        isGuest: false,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_mapAuthError(e.code));
+    }
   }
 
   @override
@@ -55,7 +84,10 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> signOut() => _authService.signOut();
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _authService.signOut();
+  }
 
   String _mapAuthError(String code) {
     switch (code) {
