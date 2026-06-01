@@ -5,18 +5,18 @@ class FreshnessSummary {
   const FreshnessSummary({
     required this.score,
     required this.urgentCount,
+    required this.totalCount,
     this.urgentFoods = const [],
     this.recommendedRecipe,
+    this.recipeError,
   });
 
   final int score;
   final int urgentCount;
+  final int totalCount;
   final List<FoodItem> urgentFoods;
   final Recipe? recommendedRecipe;
+  final String? recipeError;
 
-  bool get hasConnectedData =>
-      score > 0 ||
-      urgentCount > 0 ||
-      urgentFoods.isNotEmpty ||
-      recommendedRecipe != null;
+  bool get hasConnectedData => totalCount > 0;
 }

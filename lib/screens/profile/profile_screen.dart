@@ -33,9 +33,8 @@ class ProfileScreen extends StatelessWidget {
               if (!profile.hasConnectedData)
                 const EmptyStateView(
                   icon: Icons.person_outline,
-                  title: '프로필 데이터 연결 대기 중',
-                  message:
-                      'Firebase Auth와 사용자 프로필 컬렉션을 연결하면 계정 정보와 설정 메뉴가 표시됩니다.',
+                  title: '프로필을 불러오는 중이에요',
+                  message: '잠시 후 다시 시도해주세요.',
                 )
               else ...[
                 _ProfileHeaderCard(profile: profile),
@@ -199,11 +198,16 @@ class _ProfileMenuTile extends StatelessWidget {
         leading: Icon(_iconFor(menu.actionKey), color: accent),
         title: Text(menu.title),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () {
-          if (menu.isDestructive) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
+        onTap: () async {
+          if (menu.actionKey == 'signOut') {
+            await AppRepositories.auth.signOut();
+            if (context.mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+            }
+          } else if (menu.actionKey == 'expiry') {
+            Navigator.of(context).pushNamed('/expiry-management');
+          } else if (menu.actionKey == 'shopping') {
+            Navigator.of(context).pushNamed('/shopping-recommendations');
           }
         },
       ),

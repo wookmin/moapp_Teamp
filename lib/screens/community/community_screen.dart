@@ -42,12 +42,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     });
   }
 
-  String get _selectedFilterLabel {
-    return _filters
-        .firstWhere((filter) => filter.value == _selectedFilter)
-        .label;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,8 +87,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
               if (posts.isEmpty) {
                 return EmptyStateView(
                   icon: Icons.forum_outlined,
-                  title: '$_selectedFilterLabel 보관 팁이 없습니다',
-                  message: 'Firebase 커뮤니티 컬렉션을 연결하면 선택한 필터에 맞는 글이 표시됩니다.',
+                  title: '아직 글이 없어요',
+                  message: '첫 번째 팁을 공유해보세요! ✏️',
                 );
               }
 

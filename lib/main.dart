@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'screens/auth/auth_gate.dart';
 import 'screens/community/community_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/expiry_management/expiry_management_screen.dart';
+import 'screens/food_add/confirm_food_items_screen.dart';
+import 'screens/food_add/food_add_method_screen.dart';
+import 'screens/food_add/manual_food_add_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
 import 'screens/storage_search/storage_search_screen.dart';
+import 'services/firebase_bootstrap.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
+  await FirebaseBootstrap.initialize();
   runApp(const TeamProjectApp());
 }
 
@@ -28,17 +36,47 @@ class TeamProjectApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF5F7F2),
         useMaterial3: true,
       ),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/': (context) => const DashboardScreen(),
-        '/expiry-management': (context) => const ExpiryManagementScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/shopping-recommendations': (context) =>
-            const ShoppingRecommendationsScreen(),
-        '/storage-search': (context) => const StorageSearchScreen(),
-        '/community': (context) => const CommunityScreen(),
-      },
+      initialRoute: '/',
+      onGenerateRoute: _onGenerateRoute,
     );
+  }
+
+  Route<void> _onGenerateRoute(RouteSettings settings) {
+    final builder = switch (settings.name) {
+      '/' => (_) => const AuthGate(),
+      '/login' => (_) => const LoginScreen(),
+      '/add-food' => (_) => const FoodAddMethodScreen(),
+      '/add-food/manual' => (_) => const ManualFoodAddScreen(),
+      '/add-food/confirm' => (_) => const ConfirmFoodItemsScreen(),
+      '/expiry-management' => (_) => const ExpiryManagementScreen(),
+      '/profile' => (_) => const ProfileScreen(),
+      '/shopping-recommendations' =>
+        (_) => const ShoppingRecommendationsScreen(),
+      '/storage-search' => (_) => const StorageSearchScreen(),
+      '/community' => (_) => const CommunityScreen(),
+      _ => (_) => const AuthGate(),
+    };
+
+    final routeName = settings.name ?? '/';
+    final shouldSkipTransition = {
+      '/',
+      '/storage-search',
+      '/community',
+      '/shopping-recommendations',
+      '/profile',
+      '/expiry-management',
+    }.contains(routeName);
+
+    if (shouldSkipTransition) {
+      return PageRouteBuilder<void>(
+        settings: settings,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            builder(context),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      );
+    }
+
+    return MaterialPageRoute<void>(settings: settings, builder: builder);
   }
 }

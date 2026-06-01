@@ -8,8 +8,34 @@ import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late Future<FreshnessSummary> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  void _refresh() {
+    setState(() {
+      _future = AppRepositories.dashboard.fetchFreshnessSummary();
+    });
+  }
+
+  Future<void> _openAddFlow() async {
+    await Navigator.of(context).pushNamed('/add-food');
+    if (mounted) {
+      _refresh();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +43,15 @@ class DashboardScreen extends StatelessWidget {
       appBar: const CommonAppBar(),
       bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
       body: FutureBuilder<FreshnessSummary>(
-        future: AppRepositories.dashboard.fetchFreshnessSummary(),
+        future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final summary =
-              snapshot.data ?? const FreshnessSummary(score: 0, urgentCount: 0);
+              snapshot.data ??
+              const FreshnessSummary(score: 0, urgentCount: 0, totalCount: 0);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -32,8 +59,8 @@ class DashboardScreen extends StatelessWidget {
               if (!summary.hasConnectedData)
                 const EmptyStateView(
                   icon: Icons.kitchen_outlined,
-                  title: '냉장고 데이터 연결 대기 중',
-                  message: 'Firebase를 연결하면 신선도, 임박 품목, AI 추천 레시피가 이곳에 표시됩니다.',
+                  title: '냉장고가 비었어요!',
+                  message: '+ 버튼을 눌러 식품을 추가하면\n신선도, 임박 품목, AI 추천 레시피가 표시됩니다.',
                 )
               else ...[
                 _DashboardHeader(summary: summary),
@@ -42,14 +69,18 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _UrgentFoodSection(foods: summary.urgentFoods),
                 const SizedBox(height: 24),
-                _AiRecipeCard(recipe: summary.recommendedRecipe),
+                _AiRecipeCard(
+                  recipe: summary.recommendedRecipe,
+                  error: summary.recipeError,
+                  onRefresh: _refresh,
+                ),
               ],
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _openAddFlow,
         child: const Icon(Icons.add_rounded),
       ),
     );
@@ -200,8 +231,8 @@ class _UrgentFoodSection extends StatelessWidget {
         if (foods.isEmpty)
           const EmptyStateView(
             icon: Icons.event_available_outlined,
-            title: '임박 품목이 없습니다',
-            message: 'Firebase 품목 데이터를 연결하면 소비기한이 가까운 식재료가 표시됩니다.',
+            title: '임박 식품이 없어요 👍',
+            message: '냉장고 속 식품이 모두 신선해요!',
           )
         else
           SizedBox(
@@ -284,17 +315,31 @@ class _UrgentFoodCard extends StatelessWidget {
 }
 
 class _AiRecipeCard extends StatelessWidget {
-  const _AiRecipeCard({required this.recipe});
+  const _AiRecipeCard({
+    required this.recipe,
+    required this.onRefresh,
+    this.error,
+  });
 
   final Recipe? recipe;
+  final String? error;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (recipe == null) {
-      return const EmptyStateView(
-        icon: Icons.auto_awesome_outlined,
-        title: 'AI 추천 준비 중',
-        message: '냉장고 재료, KAMIS 가격 동향, 공공 레시피 DB를 연결하면 오늘의 추천이 표시됩니다.',
+      final hasError = error != null;
+      return EmptyStateView(
+        icon: hasError
+            ? Icons.error_outline_rounded
+            : Icons.auto_awesome_outlined,
+        title: hasError ? 'AI 추천 실패' : '오늘의 추천 레시피',
+        message: hasError ? error! : '식품을 추가하면 재료에 맞는\nAI 추천 레시피가 이곳에 표시돼요.',
+        action: TextButton.icon(
+          onPressed: onRefresh,
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: const Text('다시 시도'),
+        ),
       );
     }
 
@@ -310,6 +355,29 @@ class _AiRecipeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'AI 추천 레시피',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: onRefresh,
+                child: const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Text(
             recipe!.title,
             style: theme.textTheme.titleLarge?.copyWith(
@@ -321,10 +389,93 @@ class _AiRecipeCard extends StatelessWidget {
           Text(
             recipe!.summary,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.78),
+              color: Colors.white.withValues(alpha: 0.85),
               height: 1.5,
             ),
           ),
+          if (recipe!.ingredients.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              '필요한 재료',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: recipe!.ingredients
+                  .map(
+                    (ing) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        ing,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (recipe!.steps.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              '조리 순서',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...recipe!.steps.asMap().entries.map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      margin: const EdgeInsets.only(right: 8, top: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${e.key + 1}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        e.value,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

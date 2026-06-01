@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    match /ingredient_search_index/{keywordId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /ingredients/{ingredientId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /storage_rules/{ruleId} {
+        allow read: if true;
+        allow write: if false;
+      }
+
+      match /sources/{sourceId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+
+      match /food_items/{foodItemId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}
