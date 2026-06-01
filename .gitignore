@@ -45,9 +45,13 @@ Desktop.ini
 # Web related
 .web/
 
+# Node / local pipeline dependencies
+node_modules/
+
 # Secrets & Local Environment Config
 .env
 .env.*
+*-firebase-adminsdk-*.json
 
 # Symbolication related
 app.*.symbols

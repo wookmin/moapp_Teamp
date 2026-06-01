@@ -7,9 +7,9 @@ import 'firebase_community_repository.dart';
 import 'firebase_dashboard_repository.dart';
 import 'firebase_expiry_repository.dart';
 import 'firebase_profile_repository.dart';
+import 'firebase_storage_search_repository.dart';
+import 'kamis_shopping_recommendation_repository.dart';
 import 'placeholders/placeholder_recipe_repository.dart';
-import 'placeholders/placeholder_shopping_recommendation_repository.dart';
-import 'placeholders/placeholder_storage_search_repository.dart';
 import 'profile_repository.dart';
 import 'recipe_repository.dart';
 import 'shopping_recommendation_repository.dart';
@@ -23,9 +23,9 @@ class AppRepositories {
   static final DashboardRepository dashboard = FirebaseDashboardRepository();
   static final ProfileRepository profile = FirebaseProfileRepository();
   static final CommunityRepository community = FirebaseCommunityRepository();
-  static const StorageSearchRepository storageSearch =
-      PlaceholderStorageSearchRepository();
-  static const ShoppingRecommendationRepository shoppingRecommendations =
-      PlaceholderShoppingRecommendationRepository();
+  static final StorageSearchRepository storageSearch =
+      FirebaseStorageSearchRepository();
+  static final ShoppingRecommendationRepository shoppingRecommendations =
+      KamisShoppingRecommendationRepository();
   static const RecipeRepository recipes = PlaceholderRecipeRepository();
 }

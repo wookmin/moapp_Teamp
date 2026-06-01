@@ -11,7 +11,7 @@ class RecipeRecommendationService {
     KamisPriceService? kamisPriceService,
     AiRecommendationService? aiService,
   }) : _recipeApiService = recipeApiService ?? RecipeApiService(),
-       _kamisPriceService = kamisPriceService ?? const KamisPriceService(),
+       _kamisPriceService = kamisPriceService ?? KamisPriceService(),
        _aiService = aiService ?? AiRecommendationService();
 
   final RecipeApiService _recipeApiService;

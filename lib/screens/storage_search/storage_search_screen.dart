@@ -201,11 +201,13 @@ class _SearchTipCard extends StatelessWidget {
                 _SuggestionChip(label: tip.tag),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              tip.summary,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
-            ),
+            if (tip.summary != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                tip.summary!,
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
+              ),
+            ],
             const SizedBox(height: 16),
             if (tip.storageMethod != null)
               _TipInfoRow(
