@@ -55,7 +55,7 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CommonAppBar(),
+      appBar: const CommonAppBar(showBackButton: true),
       bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddFlow,
@@ -78,6 +78,25 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '소비기한 관리',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/', (route) => false),
+                    icon: const Icon(Icons.home_rounded, size: 18),
+                    label: const Text('홈으로'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               Text(
                 '냉장고 상태를 카테고리별로 확인하고 먼저 처리할 품목을 빠르게 정리하세요.',
                 style: Theme.of(context).textTheme.bodyLarge,

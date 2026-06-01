@@ -37,19 +37,46 @@ class TeamProjectApp extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: '/',
-      routes: {
-        '/': (context) => const AuthGate(),
-        '/login': (context) => const LoginScreen(),
-        '/add-food': (context) => const FoodAddMethodScreen(),
-        '/add-food/manual': (context) => const ManualFoodAddScreen(),
-        '/add-food/confirm': (context) => const ConfirmFoodItemsScreen(),
-        '/expiry-management': (context) => const ExpiryManagementScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/shopping-recommendations': (context) =>
-            const ShoppingRecommendationsScreen(),
-        '/storage-search': (context) => const StorageSearchScreen(),
-        '/community': (context) => const CommunityScreen(),
-      },
+      onGenerateRoute: _onGenerateRoute,
     );
+  }
+
+  Route<void> _onGenerateRoute(RouteSettings settings) {
+    final builder = switch (settings.name) {
+      '/' => (_) => const AuthGate(),
+      '/login' => (_) => const LoginScreen(),
+      '/add-food' => (_) => const FoodAddMethodScreen(),
+      '/add-food/manual' => (_) => const ManualFoodAddScreen(),
+      '/add-food/confirm' => (_) => const ConfirmFoodItemsScreen(),
+      '/expiry-management' => (_) => const ExpiryManagementScreen(),
+      '/profile' => (_) => const ProfileScreen(),
+      '/shopping-recommendations' => (_) =>
+        const ShoppingRecommendationsScreen(),
+      '/storage-search' => (_) => const StorageSearchScreen(),
+      '/community' => (_) => const CommunityScreen(),
+      _ => (_) => const AuthGate(),
+    };
+
+    final routeName = settings.name ?? '/';
+    final shouldSkipTransition = {
+      '/',
+      '/storage-search',
+      '/community',
+      '/shopping-recommendations',
+      '/profile',
+      '/expiry-management',
+    }.contains(routeName);
+
+    if (shouldSkipTransition) {
+      return PageRouteBuilder<void>(
+        settings: settings,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            builder(context),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      );
+    }
+
+    return MaterialPageRoute<void>(settings: settings, builder: builder);
   }
 }
