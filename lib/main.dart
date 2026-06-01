@@ -50,8 +50,8 @@ class TeamProjectApp extends StatelessWidget {
       '/add-food/confirm' => (_) => const ConfirmFoodItemsScreen(),
       '/expiry-management' => (_) => const ExpiryManagementScreen(),
       '/profile' => (_) => const ProfileScreen(),
-      '/shopping-recommendations' => (_) =>
-        const ShoppingRecommendationsScreen(),
+      '/shopping-recommendations' =>
+        (_) => const ShoppingRecommendationsScreen(),
       '/storage-search' => (_) => const StorageSearchScreen(),
       '/community' => (_) => const CommunityScreen(),
       _ => (_) => const AuthGate(),
