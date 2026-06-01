@@ -17,7 +17,44 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   late Future<List<StorageTip>> _tipsFuture;
   String _submittedQuery = '';
-  static const _suggestedQueries = ['우유', '두부', '대파', '계란', '삼겹살', '버섯'];
+  static const _rulebookCategories = [
+    _StorageRulebookCategory(
+      title: '육류',
+      description: '고기류 보관 기준',
+      icon: Icons.set_meal_outlined,
+      ingredients: ['육류'],
+    ),
+    _StorageRulebookCategory(
+      title: '생선류',
+      description: '어류와 수산물',
+      icon: Icons.phishing_rounded,
+      ingredients: ['생선', '어류'],
+    ),
+    _StorageRulebookCategory(
+      title: '유제품·가공',
+      description: '우유, 두부, 버터',
+      icon: Icons.local_drink_outlined,
+      ingredients: ['우유', '두부', '버터', '마요네즈'],
+    ),
+    _StorageRulebookCategory(
+      title: '채소',
+      description: '잎채소와 뿌리채소',
+      icon: Icons.eco_outlined,
+      ingredients: ['고구마', '대파', '시금치', '무', '양파', '당근', '오이', '마늘', '고추'],
+    ),
+    _StorageRulebookCategory(
+      title: '과일',
+      description: '후숙과 냉장 기준',
+      icon: Icons.spa_outlined,
+      ingredients: ['사과', '수박', '포도', '멜론', '바나나', '귤', '파인애플'],
+    ),
+    _StorageRulebookCategory(
+      title: '곡류·견과',
+      description: '빵과 견과류',
+      icon: Icons.grain_outlined,
+      ingredients: ['빵', '견과류'],
+    ),
+  ];
 
   @override
   void initState() {
@@ -45,7 +82,7 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
     _submitSearch('');
   }
 
-  void _selectSuggestedQuery(String query) {
+  void _selectIngredient(String query) {
     _searchController.text = query;
     _submitSearch(query);
   }
@@ -93,9 +130,9 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _SuggestedQuerySection(
-            queries: _suggestedQueries,
-            onSelected: _selectSuggestedQuery,
+          _StorageRulebookSection(
+            categories: _rulebookCategories,
+            onIngredientSelected: _selectIngredient,
           ),
           const SizedBox(height: 24),
           FutureBuilder<List<StorageTip>>(
@@ -105,13 +142,24 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
+              if (snapshot.hasError) {
+                return EmptyStateView(
+                  icon: Icons.cloud_off_rounded,
+                  title: '검색 데이터를 불러오지 못했어요',
+                  message: snapshot.error.toString().replaceFirst(
+                    'Exception: ',
+                    '',
+                  ),
+                );
+              }
+
               final tips = snapshot.data ?? const <StorageTip>[];
 
               if (_submittedQuery.isEmpty) {
                 return const EmptyStateView(
                   icon: Icons.manage_search_rounded,
                   title: '재료명을 검색해보세요',
-                  message: '보관 위치, 소비기한 기준, 남은 재료 활용 팁을 한 번에 확인할 수 있어요.',
+                  message: '직접 검색하거나 보관 룰북에서 카테고리별 재료를 골라볼 수 있어요.',
                 );
               }
 
@@ -145,27 +193,185 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
   }
 }
 
-class _SuggestedQuerySection extends StatelessWidget {
-  const _SuggestedQuerySection({
-    required this.queries,
-    required this.onSelected,
+class _StorageRulebookCategory {
+  const _StorageRulebookCategory({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.ingredients,
   });
 
-  final List<String> queries;
-  final ValueChanged<String> onSelected;
+  final String title;
+  final String description;
+  final IconData icon;
+  final List<String> ingredients;
+}
+
+class _StorageRulebookSection extends StatelessWidget {
+  const _StorageRulebookSection({
+    required this.categories,
+    required this.onIngredientSelected,
+  });
+
+  final List<_StorageRulebookCategory> categories;
+  final ValueChanged<String> onIngredientSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: queries.map((query) {
-        return ActionChip(
-          label: Text(query),
-          avatar: const Icon(Icons.history_rounded, size: 16),
-          onPressed: () => onSelected(query),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.menu_book_rounded, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              '보관 룰북',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '카테고리별로 자주 쓰는 식재료 보관법을 빠르게 확인해보세요.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - 10) / 2;
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: categories.map((category) {
+                return SizedBox(
+                  width: itemWidth,
+                  child: _StorageRulebookCard(
+                    category: category,
+                    onTap: () {
+                      _showIngredientSheet(
+                        context: context,
+                        category: category,
+                        onIngredientSelected: onIngredientSelected,
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _showIngredientSheet({
+    required BuildContext context,
+    required _StorageRulebookCategory category,
+    required ValueChanged<String> onIngredientSelected,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                category.title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '확인할 재료를 선택하면 바로 검색 결과로 이동합니다.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: category.ingredients.map((ingredient) {
+                  return ActionChip(
+                    label: Text(ingredient),
+                    avatar: const Icon(Icons.search_rounded, size: 16),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onIngredientSelected(ingredient);
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         );
-      }).toList(),
+      },
+    );
+  }
+}
+
+class _StorageRulebookCard extends StatelessWidget {
+  const _StorageRulebookCard({required this.category, required this.onTap});
+
+  final _StorageRulebookCategory category;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(category.icon, color: colorScheme.primary),
+              const SizedBox(height: 10),
+              Text(
+                category.title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                category.description,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
