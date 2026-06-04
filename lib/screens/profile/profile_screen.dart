@@ -48,6 +48,8 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 22),
+              const _RulebookCard(),
+              const SizedBox(height: 14),
               const _CommunityCard(),
             ],
           );
@@ -202,7 +204,9 @@ class _ProfileMenuTile extends StatelessWidget {
           if (menu.actionKey == 'signOut') {
             await AppRepositories.auth.signOut();
             if (context.mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/login', (route) => false);
             }
           } else if (menu.actionKey == 'expiry') {
             Navigator.of(context).pushNamed('/expiry-management');
@@ -223,6 +227,70 @@ class _ProfileMenuTile extends StatelessWidget {
       'logout' => Icons.logout_rounded,
       _ => Icons.chevron_right_rounded,
     };
+  }
+}
+
+class _RulebookCard extends StatelessWidget {
+  const _RulebookCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.menu_book_rounded,
+              color: colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '보관 룰북',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '식재료별 보관법과 소비 기준을 검색해요.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () =>
+                Navigator.of(context).pushNamed('/storage-rulebook'),
+            icon: const Icon(Icons.chevron_right_rounded),
+            tooltip: '보관 룰북 열기',
+          ),
+        ],
+      ),
+    );
   }
 }
 

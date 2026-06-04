@@ -9,6 +9,7 @@ import 'screens/food_add/food_add_method_screen.dart';
 import 'screens/food_add/manual_food_add_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
 import 'screens/storage_search/storage_search_screen.dart';
 import 'services/firebase_bootstrap.dart';
@@ -53,6 +54,7 @@ class TeamProjectApp extends StatelessWidget {
       '/shopping-recommendations' =>
         (_) => const ShoppingRecommendationsScreen(),
       '/storage-search' => (_) => const StorageSearchScreen(),
+      '/storage-rulebook' => (_) => const StorageRulebookScreen(),
       '/community' => (_) => const CommunityScreen(),
       _ => (_) => const AuthGate(),
     };
