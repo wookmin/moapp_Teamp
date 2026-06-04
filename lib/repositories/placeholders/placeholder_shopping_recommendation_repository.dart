@@ -6,7 +6,9 @@ class PlaceholderShoppingRecommendationRepository
   const PlaceholderShoppingRecommendationRepository();
 
   @override
-  Future<List<ShoppingCategory>> fetchRecommendations() async {
+  Future<List<ShoppingCategory>> fetchRecommendations({
+    Set<String> foodNameHistory = const {},
+  }) async {
     return const [];
   }
 }
