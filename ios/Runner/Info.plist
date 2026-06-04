@@ -77,5 +77,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>게시글에 첨부할 사진을 선택하기 위해 사진 앱 접근이 필요합니다.</string>
 </dict>
 </plist>
