@@ -5,6 +5,7 @@ import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
+import '../community/saved_tips_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -212,6 +213,10 @@ class _ProfileMenuTile extends StatelessWidget {
             Navigator.of(context).pushNamed('/expiry-management');
           } else if (menu.actionKey == 'shopping') {
             Navigator.of(context).pushNamed('/shopping-recommendations');
+          } else if (menu.actionKey == 'saved_tips') {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SavedTipsScreen()),
+            );
           }
         },
       ),

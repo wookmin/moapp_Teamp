@@ -25,6 +25,23 @@ class FirebaseCommunityRepository implements CommunityRepository {
   }
 
   @override
+  Future<List<CommunityPost>> fetchScrappedPosts({required String uid}) async {
+    final snapshot = await _collection
+        .where('scrappedBy', arrayContains: uid)
+        .limit(50)
+        .get();
+    final posts = snapshot.docs
+        .map((doc) => CommunityPost.fromFirestore(doc.id, doc.data()))
+        .toList();
+    posts.sort((a, b) {
+      final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+    return posts;
+  }
+
+  @override
   Future<void> addPost(CommunityPost post) {
     return _collection.add(post.toFirestore());
   }
@@ -72,6 +89,24 @@ class FirebaseCommunityRepository implements CommunityRepository {
       await ref.update({
         'likedBy': FieldValue.arrayUnion([uid]),
         'likesCount': FieldValue.increment(1),
+      });
+    }
+  }
+
+  @override
+  Future<void> toggleScrap({
+    required String postId,
+    required String uid,
+    required bool isCurrentlyScrapped,
+  }) async {
+    final ref = _collection.doc(postId);
+    if (isCurrentlyScrapped) {
+      await ref.update({
+        'scrappedBy': FieldValue.arrayRemove([uid]),
+      });
+    } else {
+      await ref.update({
+        'scrappedBy': FieldValue.arrayUnion([uid]),
       });
     }
   }

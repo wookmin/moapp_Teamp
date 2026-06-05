@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/community_post.dart';
@@ -24,6 +25,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   String _selectedFilter = _filters.first.value;
   late Future<List<CommunityPost>> _postsFuture;
+  String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
@@ -46,20 +48,44 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _openCompose() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const PostComposeScreen()),
-    );
+    final created = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const PostComposeScreen()));
     if (created == true && mounted) {
       setState(_refresh);
     }
   }
 
   Future<void> _openDetail(CommunityPost post) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)));
     // 상세 페이지에서 좋아요/댓글 카운트가 바뀌었을 수 있으니 목록 갱신
     if (mounted) setState(_refresh);
+  }
+
+  Future<void> _toggleScrap(CommunityPost post) async {
+    final uid = _currentUid;
+    if (uid == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('스크랩은 로그인 후 가능해요.')));
+      return;
+    }
+
+    try {
+      await AppRepositories.community.toggleScrap(
+        postId: post.id,
+        uid: uid,
+        isCurrentlyScrapped: post.isScrappedBy(uid),
+      );
+      if (mounted) setState(_refresh);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('스크랩 처리에 실패했어요: $error')));
+    }
   }
 
   @override
@@ -143,7 +169,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     .map(
                       (post) => _CommunityPostCard(
                         post: post,
+                        currentUid: _currentUid,
                         onTap: () => _openDetail(post),
+                        onScrapTap: () => _toggleScrap(post),
                       ),
                     )
                     .toList(),
@@ -197,10 +225,17 @@ class _CommunityChip extends StatelessWidget {
 }
 
 class _CommunityPostCard extends StatelessWidget {
-  const _CommunityPostCard({required this.post, required this.onTap});
+  const _CommunityPostCard({
+    required this.post,
+    required this.onTap,
+    required this.onScrapTap,
+    this.currentUid,
+  });
 
   final CommunityPost post;
   final VoidCallback onTap;
+  final VoidCallback onScrapTap;
+  final String? currentUid;
 
   _CardStyle _styleFor(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -232,6 +267,7 @@ class _CommunityPostCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final style = _styleFor(context);
     final hasImage = post.imageUrl != null && post.imageUrl!.isNotEmpty;
+    final isScrapped = currentUid != null && post.isScrappedBy(currentUid!);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -262,11 +298,17 @@ class _CommunityPostCard extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        Text(
-                          post.timeAgo,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                        IconButton(
+                          onPressed: onScrapTap,
+                          icon: Icon(
+                            isScrapped
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
                           ),
+                          color: isScrapped
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                          tooltip: isScrapped ? '스크랩 해제' : '스크랩',
                         ),
                       ],
                     ),
@@ -304,7 +346,12 @@ class _CommunityPostCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  _PostFooter(post: post, hasImage: hasImage),
+                  _PostFooter(
+                    post: post,
+                    hasImage: hasImage,
+                    isScrapped: isScrapped,
+                    onScrapTap: onScrapTap,
+                  ),
                 ],
               ),
             ),
@@ -354,7 +401,11 @@ class _PostImage extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.auto_awesome, size: 14, color: colorScheme.onPrimary),
+                Icon(
+                  Icons.auto_awesome,
+                  size: 14,
+                  color: colorScheme.onPrimary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   badge,
@@ -398,10 +449,17 @@ class _AuthorAvatar extends StatelessWidget {
 }
 
 class _PostFooter extends StatelessWidget {
-  const _PostFooter({required this.post, required this.hasImage});
+  const _PostFooter({
+    required this.post,
+    required this.hasImage,
+    required this.isScrapped,
+    required this.onScrapTap,
+  });
 
   final CommunityPost post;
   final bool hasImage;
+  final bool isScrapped;
+  final VoidCallback onScrapTap;
 
   @override
   Widget build(BuildContext context) {
@@ -457,6 +515,23 @@ class _PostFooter extends StatelessWidget {
             ),
           ),
         ],
+        const SizedBox(width: 8),
+        InkWell(
+          onTap: onScrapTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              isScrapped
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              size: 20,
+              color: isScrapped
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       ],
     );
   }

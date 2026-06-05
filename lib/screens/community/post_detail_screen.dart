@@ -23,6 +23,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   final _commentController = TextEditingController();
   bool _isSubmittingComment = false;
   bool _isTogglingLike = false;
+  bool _isTogglingScrap = false;
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         likedBy: wasLiked
             ? (_post.likedBy.where((u) => u != uid).toList())
             : ([..._post.likedBy, uid]),
+        scrappedBy: _post.scrappedBy,
       );
     });
 
@@ -122,6 +124,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           imageUrl: _post.imageUrl,
           likesCount: _post.likesCount,
           likedBy: _post.likedBy,
+          scrappedBy: _post.scrappedBy,
           createdAt: _post.createdAt,
           commentsCount: _post.commentsCount + 1,
         );
@@ -132,6 +135,52 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       _showSnack('댓글 작성에 실패했어요: $error');
     } finally {
       if (mounted) setState(() => _isSubmittingComment = false);
+    }
+  }
+
+  Future<void> _toggleScrap() async {
+    final uid = _currentUid;
+    if (uid == null) {
+      _showSnack('스크랩은 로그인 후 가능해요.');
+      return;
+    }
+    if (_isTogglingScrap) return;
+
+    final wasScrapped = _post.isScrappedBy(uid);
+    setState(() {
+      _isTogglingScrap = true;
+      _post = CommunityPost(
+        id: _post.id,
+        title: _post.title,
+        author: _post.author,
+        excerpt: _post.excerpt,
+        badge: _post.badge,
+        imageUrl: _post.imageUrl,
+        likesCount: _post.likesCount,
+        likedBy: _post.likedBy,
+        commentsCount: _post.commentsCount,
+        createdAt: _post.createdAt,
+        scrappedBy: wasScrapped
+            ? _post.scrappedBy.where((u) => u != uid).toList()
+            : [..._post.scrappedBy, uid],
+      );
+    });
+
+    try {
+      await AppRepositories.community.toggleScrap(
+        postId: _post.id,
+        uid: uid,
+        isCurrentlyScrapped: wasScrapped,
+      );
+      if (mounted) {
+        _showSnack(wasScrapped ? '스크랩을 해제했어요.' : '저장된 팁에 추가했어요.');
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _post = widget.post);
+      _showSnack('스크랩 처리에 실패했어요: $error');
+    } finally {
+      if (mounted) setState(() => _isTogglingScrap = false);
     }
   }
 
@@ -146,6 +195,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isLiked = _currentUid != null && _post.isLikedBy(_currentUid!);
+    final isScrapped = _currentUid != null && _post.isScrappedBy(_currentUid!);
 
     return Scaffold(
       appBar: AppBar(title: const Text('게시글')),
@@ -162,7 +212,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     child: Image.network(
                       _post.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (context, error, stackTrace) => Container(
                         color: colorScheme.surfaceContainerHighest,
                         alignment: Alignment.center,
                         child: Icon(
@@ -243,8 +293,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       _LikeAndCountBar(
                         post: _post,
                         isLiked: isLiked,
+                        isScrapped: isScrapped,
                         isToggling: _isTogglingLike,
+                        isTogglingScrap: _isTogglingScrap,
                         onLikeTap: _toggleLike,
+                        onScrapTap: _toggleScrap,
                       ),
                     ],
                   ),
@@ -322,20 +375,31 @@ class _LikeAndCountBar extends StatelessWidget {
   const _LikeAndCountBar({
     required this.post,
     required this.isLiked,
+    required this.isScrapped,
     required this.isToggling,
+    required this.isTogglingScrap,
     required this.onLikeTap,
+    required this.onScrapTap,
   });
 
   final CommunityPost post;
   final bool isLiked;
+  final bool isScrapped;
   final bool isToggling;
+  final bool isTogglingScrap;
   final VoidCallback onLikeTap;
+  final VoidCallback onScrapTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final likeColor = isLiked ? const Color(0xFFE03A47) : colorScheme.onSurfaceVariant;
+    final likeColor = isLiked
+        ? const Color(0xFFE03A47)
+        : colorScheme.onSurfaceVariant;
+    final scrapColor = isScrapped
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
 
     return Row(
       children: [
@@ -377,6 +441,33 @@ class _LikeAndCountBar extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
+        const Spacer(),
+        InkWell(
+          onTap: isTogglingScrap ? null : onScrapTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Row(
+              children: [
+                Icon(
+                  isScrapped
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: scrapColor,
+                  size: 22,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isScrapped ? '저장됨' : '저장',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: scrapColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -402,9 +493,7 @@ class _CommentTile extends StatelessWidget {
             radius: 16,
             backgroundColor: colorScheme.primary,
             child: Text(
-              initial.isEmpty
-                  ? '?'
-                  : initial.first.toUpperCase(),
+              initial.isEmpty ? '?' : initial.first.toUpperCase(),
               style: TextStyle(
                 color: colorScheme.onPrimary,
                 fontWeight: FontWeight.w800,

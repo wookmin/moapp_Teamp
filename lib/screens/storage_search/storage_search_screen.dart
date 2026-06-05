@@ -354,7 +354,7 @@ class _StorageRulebookCard extends StatelessWidget {
               child: Image.asset(
                 category.imagePath,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   color: colorScheme.surfaceContainerHighest,
                   alignment: Alignment.center,
                   child: Icon(
