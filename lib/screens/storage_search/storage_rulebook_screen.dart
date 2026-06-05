@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../models/storage_tip.dart';
 import '../../repositories/app_repositories.dart';
-import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 
-class StorageSearchScreen extends StatefulWidget {
-  const StorageSearchScreen({super.key});
+class StorageRulebookScreen extends StatefulWidget {
+  const StorageRulebookScreen({super.key});
 
   @override
-  State<StorageSearchScreen> createState() => _StorageSearchScreenState();
+  State<StorageRulebookScreen> createState() => _StorageRulebookScreenState();
 }
 
-class _StorageSearchScreenState extends State<StorageSearchScreen> {
+class _StorageRulebookScreenState extends State<StorageRulebookScreen> {
   final TextEditingController _searchController = TextEditingController();
   late Future<List<StorageTip>> _tipsFuture;
   String _submittedQuery = '';
@@ -21,37 +20,37 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
     _StorageRulebookCategory(
       title: '육류',
       description: '고기류 보관 기준',
-      imagePath: 'assets/categories/meat.jpg',
+      icon: Icons.set_meal_outlined,
       ingredients: ['육류'],
     ),
     _StorageRulebookCategory(
       title: '생선류',
       description: '어류와 수산물',
-      imagePath: 'assets/categories/seafood.jpg',
+      icon: Icons.phishing_rounded,
       ingredients: ['생선', '어류'],
     ),
     _StorageRulebookCategory(
       title: '유제품·가공',
       description: '우유, 두부, 버터',
-      imagePath: 'assets/categories/dairy.jpg',
+      icon: Icons.local_drink_outlined,
       ingredients: ['우유', '두부', '버터', '마요네즈'],
     ),
     _StorageRulebookCategory(
       title: '채소',
       description: '잎채소와 뿌리채소',
-      imagePath: 'assets/categories/vegetable.jpg',
+      icon: Icons.eco_outlined,
       ingredients: ['고구마', '대파', '시금치', '무', '양파', '당근', '오이', '마늘', '고추'],
     ),
     _StorageRulebookCategory(
       title: '과일',
       description: '후숙과 냉장 기준',
-      imagePath: 'assets/categories/fruit.jpg',
+      icon: Icons.spa_outlined,
       ingredients: ['사과', '수박', '포도', '멜론', '바나나', '귤', '파인애플'],
     ),
     _StorageRulebookCategory(
       title: '곡류·견과',
       description: '빵과 견과류',
-      imagePath: 'assets/categories/grain.jpg',
+      icon: Icons.grain_outlined,
       ingredients: ['빵', '견과류'],
     ),
   ];
@@ -90,10 +89,7 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(
-        currentRoute: '/storage-search',
-      ),
+      appBar: const CommonAppBar(showBackButton: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
@@ -197,13 +193,13 @@ class _StorageRulebookCategory {
   const _StorageRulebookCategory({
     required this.title,
     required this.description,
-    required this.imagePath,
+    required this.icon,
     required this.ingredients,
   });
 
   final String title;
   final String description;
-  final String imagePath;
+  final IconData icon;
   final List<String> ingredients;
 }
 
@@ -338,7 +334,6 @@ class _StorageRulebookCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      clipBehavior: Clip.antiAlias,
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
@@ -346,48 +341,31 @@ class _StorageRulebookCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Image.asset(
-                category.imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: colorScheme.surfaceContainerHighest,
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.image_outlined,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(category.icon, color: colorScheme.primary),
+              const SizedBox(height: 10),
+              Text(
+                category.title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    category.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                category.description,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

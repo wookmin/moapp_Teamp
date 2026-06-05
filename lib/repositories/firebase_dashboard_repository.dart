@@ -1,19 +1,12 @@
 import '../models/freshness_summary.dart';
-import '../models/recipe.dart';
-import '../services/recipe_recommendation_service.dart';
 import 'dashboard_repository.dart';
 import 'firebase_expiry_repository.dart';
 
 class FirebaseDashboardRepository implements DashboardRepository {
-  FirebaseDashboardRepository({
-    FirebaseExpiryRepository? expiryRepository,
-    RecipeRecommendationService? recommendationService,
-  }) : _expiryRepository = expiryRepository ?? FirebaseExpiryRepository(),
-       _recommendationService =
-           recommendationService ?? RecipeRecommendationService();
+  FirebaseDashboardRepository({FirebaseExpiryRepository? expiryRepository})
+    : _expiryRepository = expiryRepository ?? FirebaseExpiryRepository();
 
   final FirebaseExpiryRepository _expiryRepository;
-  final RecipeRecommendationService _recommendationService;
 
   @override
   Future<FreshnessSummary> fetchFreshnessSummary() async {
@@ -27,21 +20,12 @@ class FirebaseDashboardRepository implements DashboardRepository {
     final freshCount = items.where((f) => f.daysLeft > 7).length;
     final score = ((freshCount / items.length) * 100).round();
 
-    String? recipeError;
-    Recipe? recipe;
-    try {
-      recipe = await _recommendationService.recommendRecipe(foods: items);
-    } catch (e) {
-      recipeError = e.toString();
-    }
-
     return FreshnessSummary(
       score: score,
       urgentCount: urgentFoods.length,
       totalCount: items.length,
+      foods: items,
       urgentFoods: urgentFoods,
-      recommendedRecipe: recipe,
-      recipeError: recipeError,
     );
   }
 }

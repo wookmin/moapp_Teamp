@@ -6,6 +6,7 @@ class FreshnessSummary {
     required this.score,
     required this.urgentCount,
     required this.totalCount,
+    this.foods = const [],
     this.urgentFoods = const [],
     this.recommendedRecipe,
     this.recipeError,
@@ -14,6 +15,7 @@ class FreshnessSummary {
   final int score;
   final int urgentCount;
   final int totalCount;
+  final List<FoodItem> foods;
   final List<FoodItem> urgentFoods;
   final Recipe? recommendedRecipe;
   final String? recipeError;
