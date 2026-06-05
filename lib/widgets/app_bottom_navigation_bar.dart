@@ -13,10 +13,10 @@ class AppBottomNavigationBar extends StatelessWidget {
       activeIcon: Icons.home_rounded,
     ),
     _AppNavigationItem(
-      label: '검색',
+      label: '냉장고',
       routeName: '/storage-search',
-      icon: Icons.search_outlined,
-      activeIcon: Icons.search_rounded,
+      icon: Icons.kitchen_outlined,
+      activeIcon: Icons.kitchen_rounded,
     ),
     _AppNavigationItem(
       label: '커뮤니티',

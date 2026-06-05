@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/storage_tip.dart';
+import '../../models/food_item.dart';
 import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
@@ -14,77 +14,26 @@ class StorageSearchScreen extends StatefulWidget {
 }
 
 class _StorageSearchScreenState extends State<StorageSearchScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  late Future<List<StorageTip>> _tipsFuture;
-  String _submittedQuery = '';
-  static const _rulebookCategories = [
-    _StorageRulebookCategory(
-      title: '육류',
-      description: '고기류 보관 기준',
-      icon: Icons.set_meal_outlined,
-      ingredients: ['육류'],
-    ),
-    _StorageRulebookCategory(
-      title: '생선류',
-      description: '어류와 수산물',
-      icon: Icons.phishing_rounded,
-      ingredients: ['생선', '어류'],
-    ),
-    _StorageRulebookCategory(
-      title: '유제품·가공',
-      description: '우유, 두부, 버터',
-      icon: Icons.local_drink_outlined,
-      ingredients: ['우유', '두부', '버터', '마요네즈'],
-    ),
-    _StorageRulebookCategory(
-      title: '채소',
-      description: '잎채소와 뿌리채소',
-      icon: Icons.eco_outlined,
-      ingredients: ['고구마', '대파', '시금치', '무', '양파', '당근', '오이', '마늘', '고추'],
-    ),
-    _StorageRulebookCategory(
-      title: '과일',
-      description: '후숙과 냉장 기준',
-      icon: Icons.spa_outlined,
-      ingredients: ['사과', '수박', '포도', '멜론', '바나나', '귤', '파인애플'],
-    ),
-    _StorageRulebookCategory(
-      title: '곡류·견과',
-      description: '빵과 견과류',
-      icon: Icons.grain_outlined,
-      ingredients: ['빵', '견과류'],
-    ),
-  ];
+  late Future<List<FoodItem>> _future;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _tipsFuture = AppRepositories.storageSearch.searchStorageTips('');
+    _refresh();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _submitSearch(String value) {
-    final query = value.trim();
-
+  void _refresh() {
     setState(() {
-      _submittedQuery = query;
-      _tipsFuture = AppRepositories.storageSearch.searchStorageTips(query);
+      _future = AppRepositories.expiry.fetchExpiryItems();
     });
   }
 
-  void _clearSearch() {
-    _searchController.clear();
-    _submitSearch('');
-  }
-
-  void _selectIngredient(String query) {
-    _searchController.text = query;
-    _submitSearch(query);
+  Future<void> _openAddFlow() async {
+    await Navigator.of(context).pushNamed('/add-food');
+    if (mounted) {
+      _refresh();
+    }
   }
 
   @override
@@ -94,127 +43,80 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
       bottomNavigationBar: const AppBottomNavigationBar(
         currentRoute: '/storage-search',
       ),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton.extended(
+              onPressed: _openAddFlow,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('추가하기'),
+            )
+          : null,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          Text(
-            '재료명을 검색해서 적정 보관법과 소비 팁을 바로 확인하세요.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.7),
-          ),
-          const SizedBox(height: 20),
-          SearchBar(
-            controller: _searchController,
-            hintText: '예: 딸기, 우유, 아스파라거스',
-            leading: const Icon(Icons.search_rounded),
-            trailing: [
-              if (_searchController.text.isNotEmpty)
-                IconButton(
-                  onPressed: _clearSearch,
-                  icon: const Icon(Icons.close_rounded),
-                  tooltip: '검색어 지우기',
-                ),
+          _FridgeHeader(onAddPressed: _openAddFlow),
+          const SizedBox(height: 18),
+          SegmentedButton<int>(
+            selected: {_selectedIndex},
+            onSelectionChanged: (value) {
+              setState(() => _selectedIndex = value.first);
+            },
+            segments: const [
+              ButtonSegment(
+                value: 0,
+                icon: Icon(Icons.kitchen_outlined),
+                label: Text('내 냉장고'),
+              ),
+              ButtonSegment(
+                value: 1,
+                icon: Icon(Icons.people_alt_outlined),
+                label: Text('친구 냉장고'),
+              ),
             ],
-            onChanged: (_) => setState(() {}),
-            onSubmitted: _submitSearch,
-            padding: const WidgetStatePropertyAll(
-              EdgeInsets.symmetric(horizontal: 18),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: () => _submitSearch(_searchController.text),
-              icon: const Icon(Icons.search_rounded, size: 18),
-              label: const Text('검색'),
-            ),
           ),
           const SizedBox(height: 18),
-          _StorageRulebookSection(
-            categories: _rulebookCategories,
-            onIngredientSelected: _selectIngredient,
-          ),
-          const SizedBox(height: 24),
-          FutureBuilder<List<StorageTip>>(
-            future: _tipsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          if (_selectedIndex == 0)
+            FutureBuilder<List<FoodItem>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 90),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-              if (snapshot.hasError) {
-                return EmptyStateView(
-                  icon: Icons.cloud_off_rounded,
-                  title: '검색 데이터를 불러오지 못했어요',
-                  message: snapshot.error.toString().replaceFirst(
-                    'Exception: ',
-                    '',
-                  ),
-                );
-              }
-
-              final tips = snapshot.data ?? const <StorageTip>[];
-
-              if (_submittedQuery.isEmpty) {
-                return const EmptyStateView(
-                  icon: Icons.manage_search_rounded,
-                  title: '재료명을 검색해보세요',
-                  message: '직접 검색하거나 보관 룰북에서 카테고리별 재료를 골라볼 수 있어요.',
-                );
-              }
-
-              if (tips.isEmpty) {
-                return EmptyStateView(
-                  icon: Icons.search_off_rounded,
-                  title: '"$_submittedQuery" 결과가 없습니다',
-                  message:
-                      '아직 등록되지 않은 재료예요. Firebase 보관 팁 DB를 연결하면 더 많은 결과가 표시됩니다.',
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '"$_submittedQuery" 검색 결과 ${tips.length}개',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                if (snapshot.hasError) {
+                  return EmptyStateView(
+                    icon: Icons.cloud_off_rounded,
+                    title: '냉장고를 불러오지 못했어요',
+                    message: snapshot.error.toString().replaceFirst(
+                      'Exception: ',
+                      '',
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...tips.map((tip) => _SearchTipCard(tip: tip)),
-                ],
-              );
-            },
-          ),
+                    action: TextButton.icon(
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('다시 시도'),
+                    ),
+                  );
+                }
+
+                final foods = snapshot.data ?? const <FoodItem>[];
+                return _MyFridgeBoard(foods: foods, onAddPressed: _openAddFlow);
+              },
+            )
+          else
+            const _FriendFridgeMock(),
         ],
       ),
     );
   }
 }
 
-class _StorageRulebookCategory {
-  const _StorageRulebookCategory({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.ingredients,
-  });
+class _FridgeHeader extends StatelessWidget {
+  const _FridgeHeader({required this.onAddPressed});
 
-  final String title;
-  final String description;
-  final IconData icon;
-  final List<String> ingredients;
-}
-
-class _StorageRulebookSection extends StatelessWidget {
-  const _StorageRulebookSection({
-    required this.categories,
-    required this.onIngredientSelected,
-  });
-
-  final List<_StorageRulebookCategory> categories;
-  final ValueChanged<String> onIngredientSelected;
+  final VoidCallback onAddPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -226,237 +128,633 @@ class _StorageRulebookSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.menu_book_rounded, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              '보관 룰북',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '냉장고',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '칸별로 식재료를 보고 빠르게 추가하세요.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
+            IconButton.filled(
+              onPressed: onAddPressed,
+              icon: const Icon(Icons.add_rounded),
+              tooltip: '식재료 추가',
+            ),
           ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '카테고리별로 자주 쓰는 식재료 보관법을 빠르게 확인해보세요.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final itemWidth = (constraints.maxWidth - 10) / 2;
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: categories.map((category) {
-                return SizedBox(
-                  width: itemWidth,
-                  child: _StorageRulebookCard(
-                    category: category,
-                    onTap: () {
-                      _showIngredientSheet(
-                        context: context,
-                        category: category,
-                        onIngredientSelected: onIngredientSelected,
-                      );
-                    },
-                  ),
-                );
-              }).toList(),
-            );
-          },
         ),
       ],
     );
   }
+}
 
-  void _showIngredientSheet({
-    required BuildContext context,
-    required _StorageRulebookCategory category,
-    required ValueChanged<String> onIngredientSelected,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        final theme = Theme.of(context);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                category.title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '확인할 재료를 선택하면 바로 검색 결과로 이동합니다.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: category.ingredients.map((ingredient) {
-                  return ActionChip(
-                    label: Text(ingredient),
-                    avatar: const Icon(Icons.search_rounded, size: 16),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onIngredientSelected(ingredient);
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
-      },
+class _MyFridgeBoard extends StatelessWidget {
+  const _MyFridgeBoard({required this.foods, required this.onAddPressed});
+
+  final List<FoodItem> foods;
+  final VoidCallback onAddPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedFoods = [...foods]
+      ..sort((a, b) => a.daysLeft.compareTo(b.daysLeft));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (foods.isNotEmpty) ...[
+          _FridgeSummary(foods: foods),
+          const SizedBox(height: 18),
+        ],
+        _InteractiveFridge(foods: sortedFoods, onAddPressed: onAddPressed),
+        const SizedBox(height: 18),
+        if (foods.isEmpty)
+          EmptyStateView(
+            icon: Icons.add_circle_outline_rounded,
+            title: '아직 냉장고가 비어 있어요',
+            message: '재료를 추가하면 열린 냉장고 안에 하나씩 채워져요.',
+            action: FilledButton.icon(
+              onPressed: onAddPressed,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('식재료 추가'),
+            ),
+          )
+        else
+          _DenseFoodIndex(foods: sortedFoods),
+      ],
     );
   }
 }
 
-class _StorageRulebookCard extends StatelessWidget {
-  const _StorageRulebookCard({required this.category, required this.onTap});
+class _FridgeSummary extends StatelessWidget {
+  const _FridgeSummary({required this.foods});
 
-  final _StorageRulebookCategory category;
-  final VoidCallback onTap;
+  final List<FoodItem> foods;
+
+  @override
+  Widget build(BuildContext context) {
+    final urgentCount = foods.where((food) => food.isUrgent).length;
+    final expiredCount = foods.where((food) => food.daysLeft < 0).length;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          _SummaryNumber(label: '전체', value: foods.length.toString()),
+          const SizedBox(width: 14),
+          _SummaryNumber(label: '임박', value: urgentCount.toString()),
+          const SizedBox(width: 14),
+          _SummaryNumber(label: '만료', value: expiredCount.toString()),
+          const Spacer(),
+          Icon(Icons.view_week_rounded, color: colorScheme.onPrimaryContainer),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryNumber extends StatelessWidget {
+  const _SummaryNumber({required this.label, required this.value});
+
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(category.icon, color: colorScheme.primary),
-              const SizedBox(height: 10),
-              Text(
-                category.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                category.description,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.w900,
           ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.onPrimaryContainer.withValues(alpha: 0.72),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InteractiveFridge extends StatelessWidget {
+  const _InteractiveFridge({required this.foods, required this.onAddPressed});
+
+  final List<FoodItem> foods;
+  final VoidCallback onAddPressed;
+
+  static const _slots = [
+    Offset(0.17, 0.17),
+    Offset(0.30, 0.17),
+    Offset(0.43, 0.17),
+    Offset(0.56, 0.17),
+    Offset(0.69, 0.17),
+    Offset(0.20, 0.29),
+    Offset(0.34, 0.29),
+    Offset(0.48, 0.29),
+    Offset(0.62, 0.29),
+    Offset(0.76, 0.29),
+    Offset(0.17, 0.43),
+    Offset(0.30, 0.43),
+    Offset(0.43, 0.43),
+    Offset(0.56, 0.43),
+    Offset(0.69, 0.43),
+    Offset(0.20, 0.56),
+    Offset(0.34, 0.56),
+    Offset(0.48, 0.56),
+    Offset(0.62, 0.56),
+    Offset(0.76, 0.56),
+    Offset(0.18, 0.70),
+    Offset(0.31, 0.70),
+    Offset(0.44, 0.70),
+    Offset(0.57, 0.70),
+    Offset(0.70, 0.70),
+    Offset(0.24, 0.83),
+    Offset(0.38, 0.83),
+    Offset(0.52, 0.83),
+    Offset(0.66, 0.83),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final visibleFoods = foods.take(_slots.length).toList();
+    final hiddenCount = foods.length - visibleFoods.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.surface,
+            colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: AspectRatio(
+        aspectRatio: 0.72,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final height = constraints.maxHeight;
+            const tokenSize = 44.0;
+
+            return Stack(
+              children: [
+                const _OpenFridgeFrame(),
+                if (foods.isEmpty)
+                  Center(child: _EmptyFridgeMessage(onAddPressed: onAddPressed))
+                else ...[
+                  ...visibleFoods.asMap().entries.map((entry) {
+                    final slot = _slots[entry.key];
+                    final left = (width * slot.dx - tokenSize / 2).clamp(
+                      8.0,
+                      width - tokenSize - 8,
+                    );
+                    final top = (height * slot.dy - tokenSize / 2).clamp(
+                      10.0,
+                      height - tokenSize - 10,
+                    );
+
+                    return Positioned(
+                      left: left,
+                      top: top,
+                      width: tokenSize,
+                      height: tokenSize,
+                      child: _FridgeFoodToken(food: entry.value),
+                    );
+                  }),
+                  if (hiddenCount > 0)
+                    Positioned(
+                      right: 18,
+                      bottom: 18,
+                      child: _MoreFoodBadge(count: hiddenCount),
+                    ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _SearchTipCard extends StatelessWidget {
-  const _SearchTipCard({required this.tip});
+class _OpenFridgeFrame extends StatelessWidget {
+  const _OpenFridgeFrame();
 
-  final StorageTip tip;
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.58),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.22),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.shadow.withValues(alpha: 0.08),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 22,
+          right: 76,
+          top: 20,
+          bottom: 22,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF4F5),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFD8E0E2), width: 2),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 18,
+          top: 28,
+          bottom: 30,
+          width: 74,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFA),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(26),
+                bottomRight: Radius.circular(26),
+                topLeft: Radius.circular(10),
+                bottomLeft: Radius.circular(10),
+              ),
+              border: Border.all(color: const Color(0xFFD8E0E2), width: 2),
+            ),
+          ),
+        ),
+        ...[0.28, 0.45, 0.64].map(
+          (ratio) => Positioned(
+            left: 42,
+            right: 104,
+            top: 20 + ratio * 430,
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC9D3D7).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 46,
+          right: 112,
+          bottom: 70,
+          height: 72,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.56),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFC9D3D7)),
+            ),
+          ),
+        ),
+        ...[0.20, 0.43, 0.66].map(
+          (ratio) => Positioned(
+            right: 32,
+            top: 72 + ratio * 310,
+            width: 42,
+            height: 42,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8EEF0),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD4DEE1)),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyFridgeMessage extends StatelessWidget {
+  const _EmptyFridgeMessage({required this.onAddPressed});
+
+  final VoidCallback onAddPressed;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+    return Container(
+      width: 190,
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.kitchen_outlined, size: 38, color: colorScheme.primary),
+          const SizedBox(height: 10),
+          Text(
+            '빈 냉장고',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '재료를 추가하면 이 안에 하나씩 채워집니다.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: onAddPressed,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('추가'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FridgeFoodToken extends StatelessWidget {
+  const _FridgeFoodToken({required this.food});
+
+  final FoodItem food;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _statusColor(food);
+    final emoji = _emojiFor(food.name);
+
+    return GestureDetector(
+      onTap: () => _showFoodDetailSheet(context, food),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.9),
+          shape: BoxShape.circle,
+          border: Border.all(color: color, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 7,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 23))),
+      ),
+    );
+  }
+}
+
+class _MoreFoodBadge extends StatelessWidget {
+  const _MoreFoodBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '+$count개',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _DenseFoodIndex extends StatelessWidget {
+  const _DenseFoodIndex({required this.foods});
+
+  final List<FoodItem> foods;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '재료 아이콘이나 아래 이름을 누르면 소비기한을 확인할 수 있어요.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: foods.map((food) {
+            final color = _statusColor(food);
+            return InkWell(
+              onTap: () => _showFoodDetailSheet(context, food),
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: color.withValues(alpha: 0.28)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_emojiFor(food.name)),
+                    const SizedBox(width: 5),
+                    Text(
+                      food.name,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      food.expiryLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: color.withValues(alpha: 0.82),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+void _showFoodDetailSheet(BuildContext context, FoodItem food) {
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final statusColor = _statusColor(food);
+
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Text(
-                    tip.title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _emojiFor(food.name),
+                      style: const TextStyle(fontSize: 28),
                     ),
                   ),
                 ),
-                _SuggestionChip(label: tip.tag),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        food.name,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        food.storageType.label,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-            if (tip.summary != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                tip.summary!,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (tip.storageMethod != null)
-              _TipInfoRow(
-                icon: Icons.kitchen_rounded,
-                title: '보관법',
-                body: tip.storageMethod!,
-              ),
-            if (tip.expiryGuide != null)
-              _TipInfoRow(
-                icon: Icons.event_available_rounded,
-                title: '소비 기준',
-                body: tip.expiryGuide!,
-              ),
-            if (tip.consumeTip != null)
-              _TipInfoRow(
-                icon: Icons.restaurant_menu_rounded,
-                title: '활용 팁',
-                body: tip.consumeTip!,
+            const SizedBox(height: 22),
+            _FoodDetailRow(
+              icon: Icons.event_available_rounded,
+              label: '소비기한',
+              value: _formatDate(food.expiryDate),
+            ),
+            _FoodDetailRow(
+              icon: Icons.timer_outlined,
+              label: '남은 기간',
+              value: food.expiryLabel,
+              valueColor: statusColor,
+            ),
+            _FoodDetailRow(
+              icon: Icons.flag_rounded,
+              label: '상태',
+              value: food.statusLabel,
+              valueColor: statusColor,
+            ),
+            if (food.category != null && food.category!.isNotEmpty)
+              _FoodDetailRow(
+                icon: Icons.category_outlined,
+                label: '분류',
+                value: food.category!,
               ),
             const SizedBox(height: 12),
-            Text(
-              tip.source ?? '보관 팁',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
-class _TipInfoRow extends StatelessWidget {
-  const _TipInfoRow({
+class _FoodDetailRow extends StatelessWidget {
+  const _FoodDetailRow({
     required this.icon,
-    required this.title,
-    required this.body,
+    required this.label,
+    required this.value,
+    this.valueColor,
   });
 
   final IconData icon;
-  final String title;
-  final String body;
+  final String label;
+  final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -464,28 +762,24 @@ class _TipInfoRow extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 20, color: colorScheme.primary),
           const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  body,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
-                ),
-              ],
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor ?? colorScheme.onSurface,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -494,24 +788,115 @@ class _TipInfoRow extends StatelessWidget {
   }
 }
 
-class _SuggestionChip extends StatelessWidget {
-  const _SuggestionChip({required this.label});
+Color _statusColor(FoodItem food) {
+  if (food.daysLeft < 0) return const Color(0xFFC94B3E);
+  if (food.isUrgent) return const Color(0xFFD9793D);
+  if (food.daysLeft <= 7) return const Color(0xFFD0A63A);
+  return const Color(0xFF2E8B67);
+}
 
-  final String label;
+String _emojiFor(String name) {
+  if (_containsAny(name, ['우유', '요거트', '치즈'])) return '🥛';
+  if (_containsAny(name, ['두부'])) return '◻';
+  if (_containsAny(name, ['대파', '파', '상추', '배추', '시금치', '채소'])) return '🥬';
+  if (_containsAny(name, ['고기', '삼겹살', '소고기', '돼지고기', '닭'])) return '🥩';
+  if (_containsAny(name, ['생선', '고등어', '연어', '오징어'])) return '🐟';
+  if (_containsAny(name, ['계란', '달걀'])) return '🥚';
+  if (_containsAny(name, ['사과', '딸기', '귤', '오렌지', '바나나', '과일'])) return '🍎';
+  if (_containsAny(name, ['고구마', '감자', '당근', '양파', '마늘'])) return '🥕';
+  if (_containsAny(name, ['빵', '식빵'])) return '🍞';
+  if (_containsAny(name, ['밥', '쌀'])) return '🍚';
+  return '🍽';
+}
+
+bool _containsAny(String source, List<String> keywords) {
+  return keywords.any(source.contains);
+}
+
+String _formatDate(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}.$month.$day';
+}
+
+class _FriendFridgeMock extends StatelessWidget {
+  const _FriendFridgeMock();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    const friends = ['여지현'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SearchBar(
+          hintText: '이름으로 친구를 검색하세요',
+          leading: const Icon(Icons.search_rounded),
+          trailing: [
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              tooltip: '친구 추가',
+            ),
+          ],
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 18),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '친구 냉장고 둘러보기',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '친구 기능을 연결하면 친구의 공개 냉장고를 볼 수 있어요.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        ...friends.map((name) => _FriendTile(name: name)),
+      ],
+    );
+  }
+}
+
+class _FriendTile extends StatelessWidget {
+  const _FriendTile({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      child: ListTile(
+        leading: Icon(Icons.star_border_rounded, color: colorScheme.primary),
+        title: Text(name),
+        subtitle: const Text('공개 냉장고 연결 예정'),
+        trailing: OutlinedButton(onPressed: () {}, child: const Text('보기')),
       ),
     );
   }
