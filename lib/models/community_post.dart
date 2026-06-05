@@ -8,6 +8,7 @@ class CommunityPost {
     this.imageUrl,
     this.likesCount = 0,
     this.commentsCount = 0,
+    this.likedBy = const [],
     this.createdAt,
   });
 
@@ -19,7 +20,14 @@ class CommunityPost {
   final String? imageUrl;
   final int likesCount;
   final int commentsCount;
+
+  /// 좋아요를 누른 사용자 uid 목록. 현재 사용자가 좋아요를 눌렀는지 판단할 때 사용.
+  final List<String> likedBy;
+
   final DateTime? createdAt;
+
+  /// 현재 사용자가 이 글에 좋아요를 눌렀는지
+  bool isLikedBy(String uid) => likedBy.contains(uid);
 
   Map<String, Object?> toFirestore() => {
     'title': title,
@@ -29,6 +37,7 @@ class CommunityPost {
     'imageUrl': imageUrl,
     'likesCount': likesCount,
     'commentsCount': commentsCount,
+    'likedBy': likedBy,
     'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
   };
 
@@ -47,11 +56,11 @@ class CommunityPost {
       imageUrl: data['imageUrl'] as String?,
       likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
+      likedBy: (data['likedBy'] as List?)?.cast<String>() ?? const [],
       createdAt: created,
     );
   }
 
-  /// "2시간 전", "3일 전" 같은 상대 시간 라벨
   String get timeAgo {
     if (createdAt == null) return '';
     final diff = DateTime.now().difference(createdAt!);
@@ -62,7 +71,6 @@ class CommunityPost {
     return '방금 전';
   }
 
-  /// 좋아요·댓글 수를 "1.2k", "856" 형태로 포맷
   String formatCount(int count) {
     if (count >= 1000) {
       final k = count / 1000;

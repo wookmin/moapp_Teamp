@@ -67,6 +67,8 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/categories/
+    - assets/mockups/
     - assets/appLogo.svg
     - .env
 
