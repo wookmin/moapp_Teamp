@@ -6,6 +6,7 @@ import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 import 'post_compose_screen.dart';
+import 'post_detail_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -27,6 +28,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void initState() {
     super.initState();
+    _refresh();
+  }
+
+  void _refresh() {
     _postsFuture = AppRepositories.community.fetchPosts(
       filter: _selectedFilter,
     );
@@ -36,7 +41,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     if (_selectedFilter == filter) return;
     setState(() {
       _selectedFilter = filter;
-      _postsFuture = AppRepositories.community.fetchPosts(filter: filter);
+      _refresh();
     });
   }
 
@@ -45,12 +50,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
       MaterialPageRoute(builder: (_) => const PostComposeScreen()),
     );
     if (created == true && mounted) {
-      setState(() {
-        _postsFuture = AppRepositories.community.fetchPosts(
-          filter: _selectedFilter,
-        );
-      });
+      setState(_refresh);
     }
+  }
+
+  Future<void> _openDetail(CommunityPost post) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
+    );
+    // 상세 페이지에서 좋아요/댓글 카운트가 바뀌었을 수 있으니 목록 갱신
+    if (mounted) setState(_refresh);
   }
 
   @override
@@ -70,7 +79,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
-          // 1. 헤더
           Text(
             '커뮤니티 지혜',
             style: theme.textTheme.headlineMedium?.copyWith(
@@ -85,8 +93,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // 2. 검색바 (UI만)
           TextField(
             decoration: InputDecoration(
               hintText: '보관 팁 검색...',
@@ -101,8 +107,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // 3. 필터 칩
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -117,8 +121,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 .toList(),
           ),
           const SizedBox(height: 20),
-
-          // 4. 게시글 목록
           FutureBuilder<List<CommunityPost>>(
             future: _postsFuture,
             builder: (context, snapshot) {
@@ -128,9 +130,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 );
               }
-
               final posts = snapshot.data ?? const <CommunityPost>[];
-
               if (posts.isEmpty) {
                 return const EmptyStateView(
                   icon: Icons.forum_outlined,
@@ -138,10 +138,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   message: '첫 번째 팁을 공유해보세요!',
                 );
               }
-
               return Column(
                 children: posts
-                    .map((post) => _CommunityPostCard(post: post))
+                    .map(
+                      (post) => _CommunityPostCard(
+                        post: post,
+                        onTap: () => _openDetail(post),
+                      ),
+                    )
                     .toList(),
               );
             },
@@ -192,13 +196,12 @@ class _CommunityChip extends StatelessWidget {
   }
 }
 
-/// 게시글 카드: badge별로 색상/스타일이 달라지고, imageUrl 유무로 이미지/텍스트 카드가 갈린다.
 class _CommunityPostCard extends StatelessWidget {
-  const _CommunityPostCard({required this.post});
+  const _CommunityPostCard({required this.post, required this.onTap});
 
   final CommunityPost post;
+  final VoidCallback onTap;
 
-  /// badge 이름으로 카드 스타일을 결정한다.
   _CardStyle _styleFor(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     switch (post.badge) {
@@ -235,82 +238,78 @@ class _CommunityPostCard extends StatelessWidget {
       elevation: 0,
       color: style.backgroundColor,
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasImage) _PostImage(url: post.imageUrl!, badge: post.badge),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 작성자 + 시간 (이미지 카드만)
-                if (hasImage)
-                  Row(
-                    children: [
-                      _AuthorAvatar(name: post.author),
-                      const SizedBox(width: 8),
-                      Text(
-                        post.author,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w700,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasImage) _PostImage(url: post.imageUrl!, badge: post.badge),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hasImage)
+                    Row(
+                      children: [
+                        _AuthorAvatar(name: post.author),
+                        const SizedBox(width: 8),
+                        Text(
+                          post.author,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        post.timeAgo,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        const Spacer(),
+                        Text(
+                          post.timeAgo,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  if (hasImage) const SizedBox(height: 10),
+                  if (!hasImage) ...[
+                    Row(
+                      children: [
+                        Icon(style.icon, size: 18, color: style.accentColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          post.badge,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: style.accentColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  Text(
+                    post.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                if (hasImage) const SizedBox(height: 10),
-
-                // 배지 (이미지가 없는 카드만)
-                if (!hasImage) ...[
-                  Row(
-                    children: [
-                      Icon(style.icon, size: 18, color: style.accentColor),
-                      const SizedBox(width: 6),
-                      Text(
-                        post.badge,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: style.accentColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 6),
+                  Text(
+                    post.excerpt,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.85),
+                      height: 1.5,
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
+                  _PostFooter(post: post, hasImage: hasImage),
                 ],
-
-                // 제목
-                Text(
-                  post.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // 본문
-                Text(
-                  post.excerpt,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.85),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // 하단: 좋아요 / 댓글 / (이미지 카드면) 공유, (텍스트 카드면) 작성자
-                _PostFooter(post: post, hasImage: hasImage),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -381,7 +380,6 @@ class _AuthorAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // 이름의 첫 글자(또는 @ 뒤 첫 글자)를 아바타에 표시
     final clean = name.replaceAll('@', '').trim();
     final initial = clean.isEmpty ? '?' : clean.characters.first.toUpperCase();
     return CircleAvatar(
@@ -436,12 +434,21 @@ class _PostFooter extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.share_outlined, color: colorScheme.onSurfaceVariant),
-            tooltip: '공유',
-          ),
         ] else ...[
+          const SizedBox(width: 14),
+          Icon(
+            Icons.chat_bubble_outline_rounded,
+            size: 18,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            post.formatCount(post.commentsCount),
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
           const Spacer(),
           Text(
             post.author,
