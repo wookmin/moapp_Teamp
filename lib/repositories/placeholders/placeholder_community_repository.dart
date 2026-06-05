@@ -24,4 +24,15 @@ class PlaceholderCommunityRepository implements CommunityRepository {
     required String uid,
     required bool isCurrentlyLiked,
   }) async {}
+
+  @override
+  Future<void> toggleScrap({
+    required String postId,
+    required String uid,
+    required bool isCurrentlyScrapped,
+  }) async {}
+
+  @override
+  Future<List<CommunityPost>> fetchScrappedPosts({required String uid}) async =>
+      const [];
 }

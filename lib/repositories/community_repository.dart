@@ -17,4 +17,12 @@ abstract class CommunityRepository {
     required String uid,
     required bool isCurrentlyLiked,
   });
+
+  Future<void> toggleScrap({
+    required String postId,
+    required String uid,
+    required bool isCurrentlyScrapped,
+  });
+
+  Future<List<CommunityPost>> fetchScrappedPosts({required String uid});
 }

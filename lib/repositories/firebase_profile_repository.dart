@@ -5,11 +5,9 @@ import '../models/profile_data.dart';
 import 'profile_repository.dart';
 
 class FirebaseProfileRepository implements ProfileRepository {
-  FirebaseProfileRepository({
-    FirebaseFirestore? firestore,
-    FirebaseAuth? auth,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  FirebaseProfileRepository({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -37,7 +35,12 @@ class FirebaseProfileRepository implements ProfileRepository {
       menuItems: const [
         ProfileMenuItem(title: '냉장고 관리', actionKey: 'expiry'),
         ProfileMenuItem(title: '쇼핑 추천', actionKey: 'shopping'),
-        ProfileMenuItem(title: '로그아웃', actionKey: 'signOut', isDestructive: true),
+        ProfileMenuItem(title: '저장된 팁', actionKey: 'saved_tips'),
+        ProfileMenuItem(
+          title: '로그아웃',
+          actionKey: 'signOut',
+          isDestructive: true,
+        ),
       ],
     );
   }

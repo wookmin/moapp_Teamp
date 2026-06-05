@@ -9,6 +9,7 @@ class CommunityPost {
     this.likesCount = 0,
     this.commentsCount = 0,
     this.likedBy = const [],
+    this.scrappedBy = const [],
     this.createdAt,
   });
 
@@ -24,10 +25,15 @@ class CommunityPost {
   /// 좋아요를 누른 사용자 uid 목록. 현재 사용자가 좋아요를 눌렀는지 판단할 때 사용.
   final List<String> likedBy;
 
+  /// 스크랩한 사용자 uid 목록. 저장된 팁 목록과 토글 상태를 판단할 때 사용.
+  final List<String> scrappedBy;
+
   final DateTime? createdAt;
 
   /// 현재 사용자가 이 글에 좋아요를 눌렀는지
   bool isLikedBy(String uid) => likedBy.contains(uid);
+
+  bool isScrappedBy(String uid) => scrappedBy.contains(uid);
 
   Map<String, Object?> toFirestore() => {
     'title': title,
@@ -38,6 +44,7 @@ class CommunityPost {
     'likesCount': likesCount,
     'commentsCount': commentsCount,
     'likedBy': likedBy,
+    'scrappedBy': scrappedBy,
     'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
   };
 
@@ -57,6 +64,7 @@ class CommunityPost {
       likesCount: (data['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (data['commentsCount'] as num?)?.toInt() ?? 0,
       likedBy: (data['likedBy'] as List?)?.cast<String>() ?? const [],
+      scrappedBy: (data['scrappedBy'] as List?)?.cast<String>() ?? const [],
       createdAt: created,
     );
   }
