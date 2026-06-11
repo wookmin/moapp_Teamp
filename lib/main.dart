@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -10,11 +14,11 @@ import 'screens/food_add/manual_food_add_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/storage_search/storage_rulebook_screen.dart';
+import 'screens/storage_search/shared_fridge_invite_screen.dart';
 import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
 import 'screens/storage_search/storage_search_screen.dart';
 import 'services/firebase_bootstrap.dart';
 import 'services/notification_service.dart';
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,12 +29,82 @@ Future<void> main() async {
   runApp(const TeamProjectApp());
 }
 
-class TeamProjectApp extends StatelessWidget {
+class TeamProjectApp extends StatefulWidget {
   const TeamProjectApp({super.key});
+
+  @override
+  State<TeamProjectApp> createState() => _TeamProjectAppState();
+}
+
+class _TeamProjectAppState extends State<TeamProjectApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  StreamSubscription<Uri>? _linkSubscription;
+  StreamSubscription<User?>? _authSubscription;
+  SharedFridgeInviteArguments? _pendingInvite;
+  bool _isOpeningInvite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkSubscription = AppLinks().uriLinkStream.listen(
+      _handleLink,
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('[AppLinks] 링크 스트림을 시작하지 못했어요: $error');
+      },
+    );
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null && _pendingInvite != null) {
+        Future<void>.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) _openPendingInvite();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _handleLink(Uri uri) {
+    if (uri.scheme != 'jangbogo' || uri.host != 'invite') return;
+    if (uri.pathSegments.length < 2) return;
+
+    _pendingInvite = SharedFridgeInviteArguments(
+      ownerUid: uri.pathSegments[0],
+      code: uri.pathSegments[1],
+    );
+    _openPendingInvite();
+  }
+
+  void _openPendingInvite() {
+    final arguments = _pendingInvite;
+    if (arguments == null ||
+        FirebaseAuth.instance.currentUser == null ||
+        _isOpeningInvite) {
+      return;
+    }
+
+    _isOpeningInvite = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navigator = _navigatorKey.currentState;
+      if (navigator == null) {
+        _isOpeningInvite = false;
+        return;
+      }
+      _pendingInvite = null;
+      navigator
+          .pushNamed('/shared-fridge-invite', arguments: arguments)
+          .whenComplete(() => _isOpeningInvite = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Team Project',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -59,6 +133,13 @@ class TeamProjectApp extends StatelessWidget {
         (_) => const ShoppingRecommendationsScreen(),
       '/storage-search' => (_) => const StorageSearchScreen(),
       '/storage-rulebook' => (_) => const StorageRulebookScreen(),
+      '/shared-fridge-invite' => (_) {
+        final arguments = settings.arguments;
+        if (arguments is SharedFridgeInviteArguments) {
+          return SharedFridgeInviteScreen(arguments: arguments);
+        }
+        return const AuthGate();
+      },
       '/community' => (_) => const CommunityScreen(),
       _ => (_) => const AuthGate(),
     };
