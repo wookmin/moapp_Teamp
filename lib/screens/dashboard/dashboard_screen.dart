@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-
-import '../../widgets/shimmer_card.dart';
 
 import '../../models/food_item.dart';
 import '../../models/freshness_summary.dart';
@@ -10,6 +9,7 @@ import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/shimmer_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -40,10 +40,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _showTodayExpiryNotice() async {
+    final foods = await AppRepositories.expiry.fetchExpiryItems();
+
+    if (!mounted) return;
+
+    final todayFoods = foods
+        .where((food) => _isSameDate(food.expiryDate, DateTime.now()))
+        .toList();
+
+    if (todayFoods.isEmpty) {
+      _showNotificationCard(
+        title: '오늘 만료되는 품목이 없어요',
+        message: '냉장고 상태가 좋아요.',
+        index: 0,
+      );
+      return;
+    }
+
+    for (var i = 0; i < todayFoods.length; i++) {
+      final food = todayFoods[i];
+
+      Future.delayed(Duration(milliseconds: i * 260), () {
+        if (!mounted) return;
+
+        _showNotificationCard(
+          title: '${food.name}가 곧 상할 수 있어요!!',
+          message: '이 품목은 오늘 만료입니다.',
+          index: i,
+        );
+      });
+    }
+  }
+
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  void _showNotificationCard({
+    required String title,
+    required String message,
+    required int index,
+  }) {
+    final overlay = Overlay.of(context);
+    late final OverlayEntry entry;
+
+    entry = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          top: MediaQuery.of(context).padding.top + 10 + (index * 92),
+          left: 14,
+          right: 14,
+          child: _InAppNotificationCard(
+            title: title,
+            message: message,
+            onClose: () => entry.remove(),
+          ),
+        );
+      },
+    );
+
+    overlay.insert(entry);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (entry.mounted) {
+        entry.remove();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CommonAppBar(),
+      appBar: CommonAppBar(onNotificationTap: _showTodayExpiryNotice),
       bottomNavigationBar: const AppBottomNavigationBar(currentRoute: '/'),
       body: FutureBuilder<FreshnessSummary>(
         future: _future,
@@ -51,7 +120,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (snapshot.connectionState != ConnectionState.done) {
             return const _DashboardLoadingView();
           }
-
 
           final summary =
               snapshot.data ??
@@ -252,8 +320,6 @@ class _CircularScore extends StatelessWidget {
   }
 }
 
-/// 점수에 따라 상태 메시지와 색상을 자동 결정.
-/// 80↑ 신선해요(초록) / 50↑ 조심하세요(노랑) / 그 아래 관리가 필요해요(빨강)
 class _StatusInfo {
   const _StatusInfo({required this.message, required this.color});
 
@@ -303,7 +369,7 @@ class _UrgentFoodSection extends StatelessWidget {
         if (foods.isEmpty)
           const EmptyStateView(
             icon: Icons.event_available_outlined,
-            title: '임박 식품이 없어요 👍',
+            title: '임박 식품이 없어요!',
             message: '냉장고 속 식품이 모두 신선해요!',
           )
         else
@@ -605,6 +671,91 @@ class _DashboardLoadingView extends StatelessWidget {
         SizedBox(height: 24),
         ShimmerCard(height: 190),
       ],
+    );
+  }
+}
+
+class _InAppNotificationCard extends StatelessWidget {
+  const _InAppNotificationCard({
+    required this.title,
+    required this.message,
+    required this.onClose,
+  });
+
+  final String title;
+  final String message;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: GestureDetector(
+        onTap: onClose,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F7F4),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: SvgPicture.asset('assets/appLogo.svg'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      message,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.close_rounded,
+                color: Colors.black38,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

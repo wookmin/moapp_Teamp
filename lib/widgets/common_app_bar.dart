@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const CommonAppBar({super.key, this.showBackButton = false});
+  const CommonAppBar({
+    super.key,
+    this.showBackButton = false,
+    this.onNotificationTap,
+  });
 
   final bool showBackButton;
+  final VoidCallback? onNotificationTap;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -37,7 +42,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(
-            onPressed: () {},
+            onPressed: onNotificationTap,
             icon: Icon(
               Icons.notifications_none_rounded,
               color: colorScheme.onSurface,
