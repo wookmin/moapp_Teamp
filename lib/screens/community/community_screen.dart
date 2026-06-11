@@ -298,17 +298,11 @@ class _CommunityPostCard extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          onPressed: onScrapTap,
-                          icon: Icon(
-                            isScrapped
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
+                        Text(
+                          post.timeAgo,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                          color: isScrapped
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                          tooltip: isScrapped ? '스크랩 해제' : '스크랩',
                         ),
                       ],
                     ),
