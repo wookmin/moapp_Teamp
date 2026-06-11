@@ -13,11 +13,15 @@ import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
 import 'screens/storage_search/storage_search_screen.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/notification_service.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await FirebaseBootstrap.initialize();
+  // 로컬 알림 기능
+  await NotificationService.instance.initialize();
   runApp(const TeamProjectApp());
 }
 
