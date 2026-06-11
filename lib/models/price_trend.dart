@@ -9,6 +9,7 @@ class PriceTrend {
     this.previousMonthPrice,
     this.previousYearPrice,
     this.changeRate,
+    this.searchKeywords = const [],
   });
 
   final String itemName;
@@ -20,6 +21,7 @@ class PriceTrend {
   final int? previousMonthPrice;
   final int? previousYearPrice;
   final double? changeRate;
+  final List<String> searchKeywords;
 
   bool get isPriceDrop => trendLabel.contains('하락');
 }

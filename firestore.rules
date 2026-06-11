@@ -46,6 +46,10 @@ service cloud.firestore {
       match /food_items/{foodItemId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+
+      match /shopping_cart_items/{cartItemId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
   }
 }

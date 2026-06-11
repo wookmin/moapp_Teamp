@@ -14,6 +14,27 @@ class KamisPriceService {
   static const _path = '/service/price/xml.do';
 
   Future<List<PriceTrend>> fetchPriceTrends() async {
+    final trends = await fetchAllPriceTrends();
+    return trends.take(20).toList();
+  }
+
+  Future<List<PriceTrend>> searchPriceTrends(String query) async {
+    final normalizedQuery = _normalizeSearchText(query);
+    if (normalizedQuery.isEmpty) return const [];
+
+    final trends = await fetchAllPriceTrends();
+    return trends
+        .where(
+          (trend) => trend.searchKeywords.any(
+            (keyword) => _normalizeSearchText(keyword).contains(
+              normalizedQuery,
+            ),
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<PriceTrend>> fetchAllPriceTrends() async {
     final apiKey = dotenv.env['KAMIS_API_KEY']?.trim();
     final apiId = dotenv.env['KAMIS_API_ID']?.trim();
 
@@ -44,7 +65,7 @@ class KamisPriceService {
           return (b.changeRate ?? 0).abs().compareTo((a.changeRate ?? 0).abs());
         });
 
-      return trends.take(20).toList();
+      return trends;
     } on FormatException {
       return const [];
     } on http.ClientException {
@@ -86,9 +107,8 @@ class KamisPriceService {
     final productClassCode = _stringValue(row['product_cls_code']);
     if (productClassCode != null && productClassCode != '01') return null;
 
-    final itemName = _normalizeItemName(
-      _stringValue(row['item_name'] ?? row['productName']),
-    );
+    final rawItemName = _stringValue(row['item_name'] ?? row['productName']);
+    final itemName = _normalizeItemName(rawItemName);
     if (itemName == null || itemName.isEmpty) return null;
 
     final currentPrice = _priceValue(row['dpr1']);
@@ -113,6 +133,10 @@ class KamisPriceService {
       previousMonthPrice: previousMonthPrice,
       previousYearPrice: previousYearPrice,
       changeRate: changeRate,
+      searchKeywords: [
+        itemName,
+        ?rawItemName,
+      ],
     );
   }
 
@@ -157,6 +181,10 @@ class KamisPriceService {
     final text = _stringValue(value)?.replaceAll('%', '');
     if (text == null) return null;
     return double.tryParse(text);
+  }
+
+  String _normalizeSearchText(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
   }
 
   String _formatPrice(int price) {
