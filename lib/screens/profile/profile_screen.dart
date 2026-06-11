@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../models/profile_data.dart';
 import '../../repositories/app_repositories.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/shimmer_card.dart';
 import '../community/saved_tips_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -21,7 +23,7 @@ class ProfileScreen extends StatelessWidget {
         future: AppRepositories.profile.fetchProfile(),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const _ProfileLoadingView();
           }
 
           final profile =
@@ -217,6 +219,32 @@ class _ProfileMenuTile extends StatelessWidget {
             Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const SavedTipsScreen()),
             );
+          } else if (menu.actionKey == 'notifications') {
+            final granted =
+                await NotificationService.instance.requestPermissions();
+
+            if (!context.mounted) return;
+
+            if (!granted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('알림 권한이 꺼져 있어요.')),
+              );
+              return;
+            }
+
+            final foods = await AppRepositories.expiry.fetchExpiryItems();
+            final count =
+                await NotificationService.instance.showTodayExpiryAlerts(foods);
+
+            if (context.mounted) {
+              final message = count == 0
+                  ? '오늘 만료되는 식재료가 없어요.'
+                  : '오늘 만료되는 식재료 $count개를 알려드렸어요.';
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(message)),
+              );
+            }
           }
         },
       ),
@@ -226,9 +254,12 @@ class _ProfileMenuTile extends StatelessWidget {
   IconData _iconFor(String actionKey) {
     return switch (actionKey) {
       'fridge' => Icons.kitchen_outlined,
+      'expiry' => Icons.kitchen_outlined,
+      'shopping' => Icons.shopping_bag_outlined,
       'notifications' => Icons.notifications_active_outlined,
       'saved_tips' => Icons.bookmark_border_rounded,
       'settings' => Icons.settings_outlined,
+      'signOut' => Icons.logout_rounded,
       'logout' => Icons.logout_rounded,
       _ => Icons.chevron_right_rounded,
     };
@@ -342,6 +373,30 @@ class _CommunityCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileLoadingView extends StatelessWidget {
+  const _ProfileLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+      children: const [
+        ShimmerCard(height: 210, borderRadius: 28),
+        SizedBox(height: 16),
+        ShimmerCard(height: 120, borderRadius: 28),
+        SizedBox(height: 30),
+        ShimmerCard(height: 18, width: 90, borderRadius: 9),
+        SizedBox(height: 12),
+        ShimmerCard(height: 64, borderRadius: 16),
+        SizedBox(height: 12),
+        ShimmerCard(height: 64, borderRadius: 16),
+        SizedBox(height: 12),
+        ShimmerCard(height: 64, borderRadius: 16),
+      ],
     );
   }
 }

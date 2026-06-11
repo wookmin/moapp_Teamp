@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
+import '../../widgets/shimmer_card.dart';
+
 import '../../models/food_item.dart';
 import '../../models/freshness_summary.dart';
 import '../../models/recipe.dart';
@@ -47,8 +49,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const _DashboardLoadingView();
           }
+
 
           final summary =
               snapshot.data ??
@@ -572,6 +575,36 @@ class _Tag extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+}
+
+class _DashboardLoadingView extends StatelessWidget {
+  const _DashboardLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      children: const [
+        ShimmerCard(height: 34, width: 220, borderRadius: 12),
+        SizedBox(height: 10),
+        ShimmerCard(height: 18, width: 280, borderRadius: 9),
+        SizedBox(height: 20),
+        ShimmerCard(height: 144),
+        SizedBox(height: 24),
+        ShimmerCard(height: 26, width: 180, borderRadius: 12),
+        SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: ShimmerCard(height: 168)),
+            SizedBox(width: 14),
+            Expanded(child: ShimmerCard(height: 168)),
+          ],
+        ),
+        SizedBox(height: 24),
+        ShimmerCard(height: 190),
+      ],
     );
   }
 }
