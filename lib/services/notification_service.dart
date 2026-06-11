@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/services.dart';
 
 import '../models/food_item.dart';
 
@@ -12,9 +13,10 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  bool _pluginUnavailable = false;
 
   Future<void> initialize() async {
-    if (_initialized) return;
+    if (_initialized || _pluginUnavailable) return;
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -32,18 +34,23 @@ class NotificationService {
       macOS: darwinSettings,
     );
 
-    await _plugin.initialize(
-      settings: settings,
-      onDidReceiveNotificationResponse: (response) {
-        debugPrint('notification payload: ${response.payload}');
-      },
-    );
-
-    _initialized = true;
+    try {
+      await _plugin.initialize(
+        settings: settings,
+        onDidReceiveNotificationResponse: (response) {
+          debugPrint('notification payload: ${response.payload}');
+        },
+      );
+      _initialized = true;
+    } on MissingPluginException catch (error) {
+      _pluginUnavailable = true;
+      debugPrint('Local notifications plugin is unavailable: $error');
+    }
   }
 
   Future<bool> requestPermissions() async {
     await initialize();
+    if (_pluginUnavailable) return false;
 
     final androidGranted = await _plugin
         .resolvePlatformSpecificImplementation<
@@ -68,6 +75,7 @@ class NotificationService {
 
   Future<int> showTodayExpiryAlerts(List<FoodItem> foods) async {
     await initialize();
+    if (_pluginUnavailable) return 0;
 
     final todayFoods = foods
         .where((food) => _isSameDate(food.expiryDate, DateTime.now()))
@@ -118,13 +126,5 @@ class NotificationService {
 
   bool _isSameDate(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  int _notificationIdFor(String foodId) {
-    final hash = foodId.codeUnits.fold<int>(
-      0,
-      (value, codeUnit) => (value * 31 + codeUnit) & 0x7fffffff,
-    );
-    return 200000 + (hash % 700000);
   }
 }
