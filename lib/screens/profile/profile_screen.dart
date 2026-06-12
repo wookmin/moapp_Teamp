@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../models/profile_data.dart';
 import '../../repositories/app_repositories.dart';
-import '../../services/in_app_notification_service.dart';
+import '../../services/notification_center_service.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/app_shell.dart';
 import '../community/saved_tips_screen.dart';
+import '../notifications/notification_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.embedded = false, this.isActive = true});
@@ -22,13 +23,11 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<ProfileData> _profileFuture;
-  bool _hasUnread = false;
 
   @override
   void initState() {
     super.initState();
     _refreshProfile();
-    _checkUnread();
   }
 
   @override
@@ -36,7 +35,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
       setState(_refreshProfile);
-      _checkUnread();
     }
   }
 
@@ -44,20 +42,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileFuture = AppRepositories.profile.fetchProfile();
   }
 
-  Future<void> _checkUnread() async {
-    try {
-      final foods = await AppRepositories.expiry.fetchExpiryItems();
-      final hasToday = foods.any((f) => f.daysLeft <= 0);
-      if (mounted) setState(() => _hasUnread = hasToday);
-    } catch (_) {}
-  }
-
   Future<void> _onNotificationTap() async {
-    try {
-      final foods = await AppRepositories.expiry.fetchExpiryItems();
-      await showExpiryInAppNotifications(foods, daysThreshold: 0);
-    } catch (_) {}
-    if (mounted) setState(() => _hasUnread = false);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const NotificationCenterScreen()),
+    );
   }
 
   @override
@@ -97,7 +85,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ...profile.menuItems.map(
                   (menu) => _ProfileMenuTile(
                     menu: menu,
-                    hasUnread: menu.actionKey == 'notifications' && _hasUnread,
                     onNotificationTap: _onNotificationTap,
                   ),
                 ),
@@ -281,14 +268,9 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _ProfileMenuTile extends StatelessWidget {
-  const _ProfileMenuTile({
-    required this.menu,
-    this.hasUnread = false,
-    this.onNotificationTap,
-  });
+  const _ProfileMenuTile({required this.menu, this.onNotificationTap});
 
   final ProfileMenuItem menu;
-  final bool hasUnread;
   final VoidCallback? onNotificationTap;
 
   @override
@@ -298,27 +280,29 @@ class _ProfileMenuTile extends StatelessWidget {
         ? const Color(0xFFD9502B)
         : colorScheme.primary;
 
-    Widget leadingIcon = Icon(_iconFor(menu.actionKey), color: accent);
-    if (menu.actionKey == 'notifications' && hasUnread) {
-      leadingIcon = Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Icon(_iconFor(menu.actionKey), color: accent),
-          Positioned(
-            top: -2,
-            right: -2,
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE03A47),
-                shape: BoxShape.circle,
-              ),
+    final leadingIcon = menu.actionKey == 'notifications'
+        ? AnimatedBuilder(
+            animation: NotificationCenterService.instance,
+            builder: (context, child) => Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(_iconFor(menu.actionKey), color: accent),
+                if (NotificationCenterService.instance.hasUnread)
+                  const Positioned(
+                    top: -2,
+                    right: -2,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE03A47),
+                        shape: BoxShape.circle,
+                      ),
+                      child: SizedBox.square(dimension: 9),
+                    ),
+                  ),
+              ],
             ),
-          ),
-        ],
-      );
-    }
+          )
+        : Icon(_iconFor(menu.actionKey), color: accent);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

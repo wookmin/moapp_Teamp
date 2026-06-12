@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../screens/notifications/notification_center_screen.dart';
+import '../services/notification_center_service.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CommonAppBar({
@@ -49,13 +50,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(
             onPressed: onNotificationTap ?? () => _openNotifications(context),
-            icon:
-                bellIcon ??
-                Icon(
-                  Icons.notifications_none_rounded,
-                  color: colorScheme.onSurface,
-                  size: 24,
-                ),
+            icon: bellIcon ?? _NotificationBell(color: colorScheme.onSurface),
             tooltip: '알림',
           ),
         ),
@@ -66,6 +61,47 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   void _openNotifications(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const NotificationCenterScreen()),
+    );
+  }
+}
+
+class _NotificationBell extends StatelessWidget {
+  const _NotificationBell({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final service = NotificationCenterService.instance;
+
+    return AnimatedBuilder(
+      animation: service,
+      builder: (context, child) {
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(Icons.notifications_none_rounded, color: color, size: 24),
+            if (service.hasUnread)
+              Positioned(
+                top: -1,
+                right: -1,
+                child: Container(
+                  key: const Key('notification-unread-dot'),
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE03A47),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

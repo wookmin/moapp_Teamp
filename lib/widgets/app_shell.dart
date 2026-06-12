@@ -5,6 +5,7 @@ import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/shopping_recommendations/shopping_recommendations_screen.dart';
 import '../screens/storage_search/storage_search_screen.dart';
+import '../services/notification_center_service.dart';
 import 'app_bottom_navigation_bar.dart';
 
 class AppShell extends StatefulWidget {
@@ -46,7 +47,14 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late int _currentIndex = widget.initialIndex;
 
+  @override
+  void initState() {
+    super.initState();
+    NotificationCenterService.instance.refresh().ignore();
+  }
+
   void selectTab(int index) {
+    NotificationCenterService.instance.refresh().ignore();
     if (_currentIndex == index || !mounted) return;
     setState(() => _currentIndex = index);
   }
