@@ -10,7 +10,9 @@ import 'post_compose_screen.dart';
 import 'post_detail_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({super.key});
+  const CommunityScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<CommunityScreen> createState() => _CommunityScreenState();
@@ -25,7 +27,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   String _selectedFilter = _filters.first.value;
   late Future<List<CommunityPost>> _postsFuture;
-  String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
+  String? get _currentUid => AppRepositories.firebaseEnabled
+      ? FirebaseAuth.instance.currentUser?.uid
+      : null;
 
   @override
   void initState() {
@@ -95,11 +99,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(
-        currentRoute: '/community',
-      ),
+      bottomNavigationBar: widget.embedded
+          ? null
+          : const AppBottomNavigationBar(currentRoute: '/community'),
       floatingActionButton: FloatingActionButton(
         onPressed: _openCompose,
+        heroTag: 'community-compose',
         child: const Icon(Icons.add_rounded),
       ),
       body: ListView(
@@ -300,9 +305,8 @@ class _CommunityPostCard extends StatelessWidget {
                         const Spacer(),
                         Text(
                           post.timeAgo,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -396,7 +400,7 @@ class _PostImage extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.auto_awesome,
+                  Icons.label_outline_rounded,
                   size: 14,
                   color: colorScheme.onPrimary,
                 ),

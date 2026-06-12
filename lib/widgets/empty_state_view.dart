@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_tokens.dart';
+
 class EmptyStateView extends StatelessWidget {
   const EmptyStateView({
     required this.title,
@@ -21,15 +23,24 @@ class EmptyStateView extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.x3),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 40, color: colorScheme.primary),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.small),
+            ),
+            child: Icon(icon, size: 24, color: colorScheme.primary),
+          ),
           const SizedBox(height: 14),
           Text(
             title,
@@ -47,10 +58,7 @@ class EmptyStateView extends StatelessWidget {
               height: 1.45,
             ),
           ),
-          if (action != null) ...[
-            const SizedBox(height: 12),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(height: 12), action!],
         ],
       ),
     );

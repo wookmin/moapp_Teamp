@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../models/auth_user.dart';
 import '../../repositories/app_repositories.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../../widgets/app_shell.dart';
 import '../login/login_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -10,6 +11,10 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb || !AppRepositories.firebaseEnabled) {
+      return const LoginScreen(firebaseAvailable: false);
+    }
+
     return StreamBuilder<AuthUser?>(
       stream: AppRepositories.auth.authStateChanges(),
       builder: (context, snapshot) {
@@ -23,7 +28,7 @@ class AuthGate extends StatelessWidget {
           return const LoginScreen();
         }
 
-        return const DashboardScreen();
+        return const AppShell();
       },
     );
   }

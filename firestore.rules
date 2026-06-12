@@ -66,6 +66,15 @@ service cloud.firestore {
       }
     }
 
+    match /fridge_invite_codes/{inviteCode} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid;
+    }
+
     match /users/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
 
@@ -89,20 +98,19 @@ service cloud.firestore {
           && request.auth.uid == memberUid
           && request.resource.data.inviteCode is string
           && exists(
-            /databases/$(database)/documents/users/$(userId)
-              /fridge_invites/$(request.resource.data.inviteCode)
+            /databases/$(database)/documents/fridge_invite_codes/$(request.resource.data.inviteCode)
           )
           && get(
-            /databases/$(database)/documents/users/$(userId)
-              /fridge_invites/$(request.resource.data.inviteCode)
+            /databases/$(database)/documents/fridge_invite_codes/$(request.resource.data.inviteCode)
+          ).data.ownerUid == userId
+          && get(
+            /databases/$(database)/documents/fridge_invite_codes/$(request.resource.data.inviteCode)
           ).data.active == true
           && get(
-            /databases/$(database)/documents/users/$(userId)
-              /fridge_invites/$(request.resource.data.inviteCode)
+            /databases/$(database)/documents/fridge_invite_codes/$(request.resource.data.inviteCode)
           ).data.expiresAt > request.time
           && request.resource.data.role == get(
-            /databases/$(database)/documents/users/$(userId)
-              /fridge_invites/$(request.resource.data.inviteCode)
+            /databases/$(database)/documents/fridge_invite_codes/$(request.resource.data.inviteCode)
           ).data.role;
         allow update, delete: if isFridgeOwner(userId);
       }

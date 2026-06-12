@@ -9,9 +9,12 @@ import '../../services/kamis_price_service.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/food_icon.dart';
 
 class ShoppingRecommendationsScreen extends StatefulWidget {
-  const ShoppingRecommendationsScreen({super.key});
+  const ShoppingRecommendationsScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<ShoppingRecommendationsScreen> createState() =>
@@ -301,9 +304,11 @@ class _ShoppingRecommendationsScreenState
 
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(
-        currentRoute: '/shopping-recommendations',
-      ),
+      bottomNavigationBar: widget.embedded
+          ? null
+          : const AppBottomNavigationBar(
+              currentRoute: '/shopping-recommendations',
+            ),
       body: FutureBuilder<_ShoppingScreenData>(
         future: _future,
         builder: (context, snapshot) {
@@ -315,7 +320,10 @@ class _ShoppingRecommendationsScreenState
             return EmptyStateView(
               icon: Icons.shopping_cart_outlined,
               title: '장보기 데이터를 불러오지 못했어요',
-              message: snapshot.error.toString().replaceFirst('Exception: ', ''),
+              message: snapshot.error.toString().replaceFirst(
+                'Exception: ',
+                '',
+              ),
             );
           }
 
@@ -323,75 +331,64 @@ class _ShoppingRecommendationsScreenState
               snapshot.data ??
               const _ShoppingScreenData(categories: [], cartItems: []);
 
-          return Stack(
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
             children: [
-              ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
-                children: [
-                  _SmartCartBanner(
-                    pendingCount: data.pendingRecommendationCount,
-                    isCartAvailable: !data.hasCartError,
-                    onAddAll: () => _addAllRecommendations(data),
-                  ),
-                  const SizedBox(height: 18),
-                  _KamisPriceSearchSection(
-                    controller: _searchController,
-                    submittedQuery: _submittedSearchQuery,
-                    searchFuture: _searchFuture,
-                    cartNames: data.cartNames,
-                    onSubmit: _submitSearch,
-                    onClear: _clearSearch,
-                    onQueryChanged: _updateSearchText,
-                    onAdd: _addRecommendation,
-                  ),
-                  const SizedBox(height: 26),
-                  Text(
-                    '장보기 추천 리스트',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '냉장고 품목과 KAMIS 가격 동향을 분석해 살 만한 재료를 추천합니다.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (data.categories.isEmpty)
-                    const EmptyStateView(
-                      icon: Icons.shopping_cart_outlined,
-                      title: '추천 장보기 목록이 없어요',
-                      message: '냉장고에 식품을 추가하면\n맞춤 쇼핑 추천이 표시됩니다.',
-                    )
-                  else
-                    for (final category in data.categories) ...[
-                      _CategorySection(
-                        category: category,
-                        cartNames: data.cartNames,
-                        onAdd: _addRecommendation,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                ],
+              _SmartCartBanner(
+                pendingCount: data.pendingRecommendationCount,
+                cartCount: data.cartItems.length,
+                isCartAvailable: !data.hasCartError,
+                onAddAll: () => _addAllRecommendations(data),
               ),
-              Positioned(
-                right: 20,
-                bottom: 20,
-                child: AnimatedBuilder(
-                  animation: _cartHighlightController,
-                  builder: (context, child) {
-                    return _CartFloatingButton(
-                      key: _cartFabKey,
-                      itemCount: data.cartItems.length,
-                      hasError: data.hasCartError,
-                      highlightOpacity: _cartHighlightController.value,
-                      onPressed: () => _openCartSheet(data),
-                    );
-                  },
+              const SizedBox(height: 12),
+              AnimatedBuilder(
+                animation: _cartHighlightController,
+                builder: (context, child) {
+                  return _CartFloatingButton(
+                    key: _cartFabKey,
+                    itemCount: data.cartItems.length,
+                    hasError: data.hasCartError,
+                    highlightOpacity: _cartHighlightController.value,
+                    onPressed: () => _openCartSheet(data),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              _KamisPriceSearchSection(
+                controller: _searchController,
+                submittedQuery: _submittedSearchQuery,
+                searchFuture: _searchFuture,
+                cartNames: data.cartNames,
+                onSubmit: _submitSearch,
+                onClear: _clearSearch,
+                onQueryChanged: _updateSearchText,
+                onAdd: _addRecommendation,
+              ),
+              const SizedBox(height: 26),
+              Text('장보기 추천', style: theme.textTheme.headlineSmall),
+              const SizedBox(height: 6),
+              Text(
+                '냉장고 재고와 KAMIS 가격 흐름을 기준으로 필요한 품목만 보여드려요.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: 20),
+              if (data.categories.isEmpty)
+                const EmptyStateView(
+                  icon: Icons.shopping_cart_outlined,
+                  title: '추천 장보기 목록이 없어요',
+                  message: '냉장고에 식품을 추가하면\n맞춤 쇼핑 추천이 표시됩니다.',
+                )
+              else
+                for (final category in data.categories) ...[
+                  _CategorySection(
+                    category: category,
+                    cartNames: data.cartNames,
+                    onAdd: _addRecommendation,
+                  ),
+                  const SizedBox(height: 24),
+                ],
             ],
           );
         },
@@ -434,16 +431,15 @@ class _ShoppingScreenData {
 class _SmartCartBanner extends StatelessWidget {
   const _SmartCartBanner({
     required this.pendingCount,
+    required this.cartCount,
     required this.isCartAvailable,
     required this.onAddAll,
   });
 
   final int pendingCount;
+  final int cartCount;
   final bool isCartAvailable;
   final VoidCallback onAddAll;
-
-  static const String _backgroundUrl =
-      'https://img.freepik.com/premium-photo/shopping-basket-full-fruits-vegetables_53876-157890.jpg';
 
   @override
   Widget build(BuildContext context) {
@@ -451,80 +447,89 @@ class _SmartCartBanner extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final hasPendingItems = pendingCount > 0 && isCartAvailable;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: SizedBox(
-        height: 168,
-        width: double.infinity,
-        child: Stack(
-          fit: StackFit.expand,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('이번 장보기', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _ShoppingMetric(
+                value: '$pendingCount',
+                label: '추천 품목',
+                icon: Icons.playlist_add_check_rounded,
+              ),
+              const SizedBox(width: 12),
+              _ShoppingMetric(
+                value: '$cartCount',
+                label: '담은 품목',
+                icon: Icons.shopping_basket_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: hasPendingItems ? onAddAll : null,
+              icon: const Icon(Icons.add_task_rounded),
+              label: Text(
+                !isCartAvailable
+                    ? '장바구니 연결 확인 필요'
+                    : hasPendingItems
+                    ? '추천 $pendingCount개 한 번에 담기'
+                    : '추천 품목을 모두 담았어요',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShoppingMetric extends StatelessWidget {
+  const _ShoppingMetric({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
           children: [
-            Image.network(
-              _backgroundUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return Container(color: colorScheme.primaryContainer);
-              },
-              errorBuilder: (context, error, stack) =>
-                  Container(color: colorScheme.primaryContainer),
-            ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xCC0E2E1F), Color(0x66000000)],
+            Icon(icon, color: theme.colorScheme.primary, size: 20),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: theme.textTheme.titleLarge),
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '스마트 장바구니',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        !isCartAvailable
-                            ? '장바구니 권한 설정을 확인해야 해요'
-                            : hasPendingItems
-                            ? '$pendingCount개 추천 품목을 바로 담을 수 있어요'
-                            : '추천 품목이 모두 장바구니에 담겼어요',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FilledButton(
-                      onPressed: hasPendingItems ? onAddAll : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.white.withValues(
-                          alpha: 0.55,
-                        ),
-                        foregroundColor: colorScheme.primary,
-                        disabledForegroundColor: colorScheme.primary
-                            .withValues(alpha: 0.65),
-                      ),
-                      child: const Text('모두 리스트에 추가'),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
           ],
         ),
@@ -645,9 +650,9 @@ class _KamisSearchResults extends StatelessWidget {
           children: [
             Text(
               '"$submittedQuery" 검색 결과 ${trends.length}개',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             ...trends.map((trend) {
@@ -878,51 +883,26 @@ class _CartFloatingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final scale = 1 + (highlightOpacity * 0.08);
-
-    return Transform.scale(
-      scale: scale,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          FloatingActionButton(
-            onPressed: onPressed,
-            tooltip: '내 장바구니',
-            backgroundColor: Color.lerp(
-              colorScheme.primary,
-              colorScheme.tertiary,
-              highlightOpacity,
-            ),
-            foregroundColor: colorScheme.onPrimary,
-            child: Icon(
-              hasError
-                  ? Icons.error_outline_rounded
-                  : Icons.shopping_basket_rounded,
-            ),
+    return AnimatedScale(
+      scale: 1 + (highlightOpacity * 0.025),
+      duration: const Duration(milliseconds: 120),
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(
+          hasError
+              ? Icons.error_outline_rounded
+              : Icons.shopping_basket_outlined,
+        ),
+        label: Text(hasError ? '장바구니 연결 확인' : '내 장바구니 · $itemCount개'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(52),
+          foregroundColor: colorScheme.primary,
+          backgroundColor: Color.lerp(
+            colorScheme.surface,
+            colorScheme.primaryContainer,
+            highlightOpacity,
           ),
-          if (itemCount > 0)
-            Positioned(
-              right: -2,
-              top: -6,
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: colorScheme.error,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: colorScheme.surface, width: 2),
-                ),
-                child: Text(
-                  itemCount > 99 ? '99+' : '$itemCount',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onError,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -1055,9 +1035,7 @@ class _CartBottomSheetState extends State<_CartBottomSheet> {
   Future<void> _deleteItem(ShoppingCartItem item) async {
     await widget.onDelete(item);
     setState(() {
-      _items = _items
-          .where((candidate) => candidate.id != item.id)
-          .toList();
+      _items = _items.where((candidate) => candidate.id != item.id).toList();
     });
   }
 }
@@ -1097,11 +1075,7 @@ class _CartItemTile extends StatelessWidget {
         ),
         subtitle: item.note.isEmpty
             ? null
-            : Text(
-                item.note,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            : Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis),
         secondary: IconButton(
           onPressed: onDelete,
           icon: const Icon(Icons.delete_outline_rounded),
@@ -1198,7 +1172,7 @@ class _ShoppingItemCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ItemThumbnail(imageUrl: item.imageUrl),
+                _ItemThumbnail(name: item.name),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -1301,9 +1275,9 @@ class _FlyingCartIcon extends StatelessWidget {
 }
 
 class _ItemThumbnail extends StatelessWidget {
-  const _ItemThumbnail({required this.imageUrl});
+  const _ItemThumbnail({required this.name});
 
-  final String? imageUrl;
+  final String name;
 
   @override
   Widget build(BuildContext context) {
@@ -1316,36 +1290,7 @@ class _ItemThumbnail extends StatelessWidget {
         width: size,
         height: size,
         color: colorScheme.surfaceContainerHighest,
-        child: (imageUrl == null || imageUrl!.isEmpty)
-            ? Icon(
-                Icons.eco_rounded,
-                color: colorScheme.onSurfaceVariant,
-                size: 28,
-              )
-            : Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                width: size,
-                height: size,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Center(
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stack) => Icon(
-                  Icons.eco_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 28,
-                ),
-              ),
+        child: Icon(foodIconFor(name), color: colorScheme.primary, size: 28),
       ),
     );
   }

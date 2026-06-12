@@ -2,34 +2,31 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'screens/auth/auth_gate.dart';
-import 'screens/community/community_screen.dart';
 import 'screens/expiry_management/expiry_management_screen.dart';
 import 'screens/food_add/confirm_food_items_screen.dart';
 import 'screens/food_add/food_add_method_screen.dart';
 import 'screens/food_add/manual_food_add_screen.dart';
 import 'screens/login/login_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/storage_search/shared_fridge_invite_screen.dart';
-import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
 import 'screens/storage_search/storage_rulebook_screen.dart';
-import 'screens/storage_search/storage_search_screen.dart';
+import 'repositories/app_repositories.dart';
 import 'services/firebase_bootstrap.dart';
 import 'services/in_app_notification_service.dart';
 import 'services/notification_service.dart';
-
-final _navigatorKey = GlobalKey<NavigatorState>();
+import 'theme/app_theme.dart';
+import 'widgets/app_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  await FirebaseBootstrap.initialize();
+  final firebaseEnabled = await FirebaseBootstrap.initialize();
+  AppRepositories.configure(firebaseEnabled: firebaseEnabled);
   await NotificationService.instance.initialize();
-  InAppNotificationService.instance.setNavigatorKey(_navigatorKey);
   runApp(const TeamProjectApp());
 }
 
@@ -50,19 +47,24 @@ class _TeamProjectAppState extends State<TeamProjectApp> {
   @override
   void initState() {
     super.initState();
+    InAppNotificationService.instance.setNavigatorKey(_navigatorKey);
     _linkSubscription = AppLinks().uriLinkStream.listen(
       _handleLink,
       onError: (Object error, StackTrace stackTrace) {
         debugPrint('[AppLinks] 링크 스트림을 시작하지 못했어요: $error');
       },
     );
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user != null && _pendingInvite != null) {
-        Future<void>.delayed(const Duration(milliseconds: 400), () {
-          if (mounted) _openPendingInvite();
-        });
-      }
-    });
+    if (!kIsWeb && AppRepositories.firebaseEnabled) {
+      _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+        user,
+      ) {
+        if (user != null && _pendingInvite != null) {
+          Future<void>.delayed(const Duration(milliseconds: 400), () {
+            if (mounted) _openPendingInvite();
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -86,6 +88,8 @@ class _TeamProjectAppState extends State<TeamProjectApp> {
   void _openPendingInvite() {
     final arguments = _pendingInvite;
     if (arguments == null ||
+        !AppRepositories.firebaseEnabled ||
+        kIsWeb ||
         FirebaseAuth.instance.currentUser == null ||
         _isOpeningInvite) {
       return;
@@ -111,14 +115,7 @@ class _TeamProjectAppState extends State<TeamProjectApp> {
       navigatorKey: _navigatorKey,
       title: 'Team Project',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1D8B5B),
-          surface: const Color(0xFFF5F7F2),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF5F7F2),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       initialRoute: '/',
       onGenerateRoute: _onGenerateRoute,
     );
@@ -132,10 +129,7 @@ class _TeamProjectAppState extends State<TeamProjectApp> {
       '/add-food/manual' => (_) => const ManualFoodAddScreen(),
       '/add-food/confirm' => (_) => const ConfirmFoodItemsScreen(),
       '/expiry-management' => (_) => const ExpiryManagementScreen(),
-      '/profile' => (_) => const ProfileScreen(),
-      '/shopping-recommendations' =>
-        (_) => const ShoppingRecommendationsScreen(),
-      '/storage-search' => (_) => const StorageSearchScreen(),
+      '/storage-search' => (_) => const AppShell(initialIndex: 1),
       '/storage-rulebook' => (_) => const StorageRulebookScreen(),
       '/shared-fridge-invite' => (_) {
         final arguments = settings.arguments;
@@ -144,7 +138,9 @@ class _TeamProjectAppState extends State<TeamProjectApp> {
         }
         return const AuthGate();
       },
-      '/community' => (_) => const CommunityScreen(),
+      '/community' => (_) => const AppShell(initialIndex: 2),
+      '/shopping-recommendations' => (_) => const AppShell(initialIndex: 3),
+      '/profile' => (_) => const AppShell(initialIndex: 4),
       _ => (_) => const AuthGate(),
     };
 

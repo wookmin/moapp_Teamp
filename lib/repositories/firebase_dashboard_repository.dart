@@ -35,24 +35,17 @@ class FirebaseDashboardRepository implements DashboardRepository {
     final freshCount = items.where((f) => f.daysLeft > 7).length;
     final score = ((freshCount / items.length) * 100).round();
 
-    // ── 3단계: AI 레시피 추천 (독립 실행 — 실패해도 신선도는 정상) ──
-    Recipe? recipe;
-    String? recipeError;
-    try {
-      recipe = await _recipeService.recommendRecipe(foods: items);
-    } catch (error) {
-      recipeError = error.toString().replaceFirst('Exception: ', '');
-    }
-
-    // ── 4단계: 통합 반환 ──
     return FreshnessSummary(
       score: score,
       urgentCount: urgentFoods.length,
       totalCount: items.length,
       foods: items,
       urgentFoods: urgentFoods,
-      recommendedRecipe: recipe,
-      recipeError: recipeError,
     );
+  }
+
+  @override
+  Future<Recipe?> recommendRecipe(List<FoodItem> foods) {
+    return _recipeService.recommendRecipe(foods: foods);
   }
 }

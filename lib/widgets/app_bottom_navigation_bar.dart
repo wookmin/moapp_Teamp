@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppBottomNavigationBar extends StatelessWidget {
-  const AppBottomNavigationBar({required this.currentRoute, super.key});
+  const AppBottomNavigationBar({
+    super.key,
+    this.currentRoute,
+    this.selectedIndex,
+    this.onDestinationSelected,
+  });
 
-  final String currentRoute;
+  final String? currentRoute;
+  final int? selectedIndex;
+  final ValueChanged<int>? onDestinationSelected;
 
   static const List<_AppNavigationItem> _items = [
     _AppNavigationItem(
@@ -40,37 +47,27 @@ class AppBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final resolvedIndex =
+        selectedIndex ??
+        _items
+            .indexWhere((item) => item.routeName == currentRoute)
+            .clamp(0, _items.length - 1);
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.05),
-              blurRadius: 18,
-              offset: const Offset(0, -6),
+    return NavigationBar(
+      selectedIndex: resolvedIndex,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      onDestinationSelected:
+          onDestinationSelected ??
+          (index) => _navigateTo(context, _items[index].routeName),
+      destinations: _items
+          .map(
+            (item) => NavigationDestination(
+              icon: Icon(item.icon),
+              selectedIcon: Icon(item.activeIcon),
+              label: item.label,
             ),
-          ],
-        ),
-        child: Row(
-          children: _items.map((item) {
-            final selected = currentRoute == item.routeName;
-
-            return Expanded(
-              child: _NavigationItem(
-                item: item,
-                selected: selected,
-                onTap: () => _navigateTo(context, item.routeName),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
+          )
+          .toList(),
     );
   }
 
@@ -80,66 +77,6 @@ class AppBottomNavigationBar extends StatelessWidget {
     }
 
     Navigator.of(context).pushNamedAndRemoveUntil(routeName, (route) => false);
-  }
-}
-
-class _NavigationItem extends StatelessWidget {
-  const _NavigationItem({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _AppNavigationItem item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final foregroundColor = selected
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected
-                    ? colorScheme.primaryContainer
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(
-                selected ? item.activeIcon : item.icon,
-                size: 22,
-                color: selected
-                    ? colorScheme.onPrimaryContainer
-                    : foregroundColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: foregroundColor,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
