@@ -16,16 +16,20 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/storage_search/shared_fridge_invite_screen.dart';
 import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
+import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/storage_search/storage_search_screen.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/in_app_notification_service.dart';
 import 'services/notification_service.dart';
+
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await FirebaseBootstrap.initialize();
-  // 로컬 알림 기능
   await NotificationService.instance.initialize();
+  InAppNotificationService.instance.setNavigatorKey(_navigatorKey);
   runApp(const TeamProjectApp());
 }
 

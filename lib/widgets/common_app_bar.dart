@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const CommonAppBar({super.key, this.showBackButton = false});
+  const CommonAppBar({
+    super.key,
+    this.showBackButton = false,
+    this.onNotificationTap,
+    this.bellIcon,
+  });
 
   final bool showBackButton;
+  final VoidCallback? onNotificationTap;
+
+  /// 커스텀 종 아이콘 (빨간 점 오버레이 등). null이면 기본 아이콘 사용.
+  final Widget? bellIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -37,12 +46,13 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: colorScheme.onSurface,
-              size: 24,
-            ),
+            onPressed: onNotificationTap,
+            icon: bellIcon ??
+                Icon(
+                  Icons.notifications_none_rounded,
+                  color: colorScheme.onSurface,
+                  size: 24,
+                ),
             tooltip: '알림',
           ),
         ),

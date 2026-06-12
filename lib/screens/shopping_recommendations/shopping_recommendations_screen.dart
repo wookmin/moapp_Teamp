@@ -57,16 +57,19 @@ class _ShoppingRecommendationsScreenState
   /// 자동으로 필터에 포함된다.
   Future<List<ShoppingCategory>> _loadRecommendations() async {
     Set<String> foodNameHistory = const {};
+    List<FoodItem> currentFoods = const [];
     try {
       final foods = await AppRepositories.expiry.fetchExpiryItems();
       foodNameHistory = foods.map((FoodItem f) => f.name.trim()).toSet();
+      currentFoods = foods;
     } catch (_) {
-      // 로그인 전이거나 ExpiryRepository 호출 실패 시 → 필터 없이 전체 추천
       foodNameHistory = const {};
+      currentFoods = const [];
     }
 
     return AppRepositories.shoppingRecommendations.fetchRecommendations(
       foodNameHistory: foodNameHistory,
+      currentFoods: currentFoods,
     );
   }
 
@@ -553,26 +556,9 @@ class _KamisPriceSearchSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'KAMIS 가격 검색',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '궁금한 식재료의 오늘 가격과 등락률을 확인해보세요.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
         SearchBar(
           controller: controller,
           hintText: '예: 사과, 양파, 배추',
@@ -589,15 +575,6 @@ class _KamisPriceSearchSection extends StatelessWidget {
           onSubmitted: onSubmit,
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 18),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.icon(
-            onPressed: () => onSubmit(controller.text),
-            icon: const Icon(Icons.manage_search_rounded, size: 18),
-            label: const Text('가격 검색'),
           ),
         ),
         const SizedBox(height: 14),
