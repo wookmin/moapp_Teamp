@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/food_item.dart';
 import '../../repositories/app_repositories.dart';
+import '../../services/notification_center_service.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
@@ -49,6 +50,7 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
 
   Future<void> _deleteItem(FoodItem item) async {
     await AppRepositories.expiry.deleteFoodItem(item.id);
+    await NotificationCenterService.instance.refresh();
     _refresh();
   }
 

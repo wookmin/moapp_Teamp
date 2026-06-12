@@ -5,6 +5,7 @@ import 'package:teamproject/repositories/app_repositories.dart';
 import 'package:teamproject/screens/login/login_screen.dart';
 import 'package:teamproject/models/food_item.dart';
 import 'package:teamproject/services/freshness_calculator.dart';
+import 'package:teamproject/services/notification_center_service.dart';
 import 'package:teamproject/theme/app_theme.dart';
 import 'package:teamproject/widgets/app_shell.dart';
 import 'package:teamproject/widgets/common_app_bar.dart';
@@ -12,6 +13,7 @@ import 'package:teamproject/widgets/common_app_bar.dart';
 void main() {
   setUp(() {
     AppRepositories.configure(firebaseEnabled: false);
+    NotificationCenterService.instance.resetForTest();
   });
 
   test('freshness score uses one shared calculation', () {
@@ -31,6 +33,29 @@ void main() {
 
     expect(FreshnessCalculator.calculate(const []), 0);
     expect(FreshnessCalculator.calculate(foods), 50);
+  });
+
+  test('expiry notifications only include items due within five days', () {
+    final now = DateTime.now();
+    final notifications = NotificationCenterService.buildNotifications([
+      FoodItem(
+        id: 'expired',
+        name: '지난 재료',
+        expiryDate: now.subtract(const Duration(days: 1)),
+      ),
+      FoodItem(
+        id: 'soon',
+        name: '임박 재료',
+        expiryDate: now.add(const Duration(days: 2)),
+      ),
+      FoodItem(
+        id: 'fresh',
+        name: '여유 재료',
+        expiryDate: now.add(const Duration(days: 10)),
+      ),
+    ]);
+
+    expect(notifications.map((item) => item.food.id), ['expired', 'soon']);
   });
 
   testWidgets('main shell renders and switches tabs at 390x844', (

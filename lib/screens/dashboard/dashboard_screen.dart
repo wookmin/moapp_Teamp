@@ -5,12 +5,12 @@ import '../../models/food_item.dart';
 import '../../models/freshness_summary.dart';
 import '../../models/recipe.dart';
 import '../../repositories/app_repositories.dart';
+import '../../services/notification_center_service.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/food_icon.dart';
 import '../../widgets/shimmer_card.dart';
-import '../notifications/notification_center_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, this.embedded = false});
@@ -27,13 +27,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _recipeError;
   bool _isRecipeLoading = false;
   bool _hasRequestedRecipe = false;
-  bool _hasUnread = false;
 
   @override
   void initState() {
     super.initState();
     _refresh();
-    _checkUnread();
   }
 
   void _refresh() {
@@ -77,38 +75,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _checkUnread() async {
-    try {
-      final foods = await AppRepositories.expiry.fetchExpiryItems();
-      final hasToday = foods.any((f) => f.daysLeft <= 2);
-      if (mounted) setState(() => _hasUnread = hasToday);
-    } catch (_) {}
-  }
-
   Future<void> _openAddFlow() async {
     await Navigator.of(context).pushNamed('/add-food');
-    if (mounted) _refresh();
-  }
-
-  Future<void> _openNotificationCenter() async {
-    // 빨간 점 즉시 제거
-    if (mounted) setState(() => _hasUnread = false);
-
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const NotificationCenterScreen()));
-
-    // 돌아오면 다시 체크
-    if (mounted) _checkUnread();
+    if (mounted) {
+      _refresh();
+      NotificationCenterService.instance.refresh().ignore();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _DashboardAppBar(
-        hasUnread: _hasUnread,
-        onNotificationTap: _openNotificationCenter,
-      ),
+      appBar: const CommonAppBar(),
       bottomNavigationBar: widget.embedded
           ? null
           : const AppBottomNavigationBar(currentRoute: '/'),
@@ -155,60 +133,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         tooltip: '식재료 추가',
         child: const Icon(Icons.add_rounded),
       ),
-    );
-  }
-}
-
-class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _DashboardAppBar({
-    required this.hasUnread,
-    required this.onNotificationTap,
-  });
-
-  final bool hasUnread;
-  final VoidCallback onNotificationTap;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(60);
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    Widget bellIcon = Icon(
-      Icons.notifications_none_rounded,
-      color: colorScheme.onSurface,
-      size: 24,
-    );
-
-    if (hasUnread) {
-      bellIcon = Stack(
-        clipBehavior: Clip.none,
-        children: [
-          bellIcon,
-          Positioned(
-            top: -1,
-            right: -1,
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE03A47),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return CommonAppBar(
-      onNotificationTap: onNotificationTap,
-      bellIcon: bellIcon,
     );
   }
 }

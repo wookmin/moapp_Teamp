@@ -4,6 +4,7 @@ import '../../models/food_candidate_type.dart';
 import '../../models/recognized_food_item.dart';
 import '../../models/storage_type.dart';
 import '../../repositories/app_repositories.dart';
+import '../../services/notification_center_service.dart';
 import '../../widgets/common_app_bar.dart';
 
 class ConfirmFoodItemsScreen extends StatefulWidget {
@@ -51,6 +52,7 @@ class _ConfirmFoodItemsScreenState extends State<ConfirmFoodItemsScreen> {
           storageType: item.storageType,
         );
       }
+      await NotificationCenterService.instance.refresh();
 
       if (!mounted) {
         return;
