@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../theme/app_tokens.dart';
 
@@ -8,12 +9,14 @@ class EmptyStateView extends StatelessWidget {
     required this.message,
     super.key,
     this.icon = Icons.dataset_outlined,
+    this.lottieUrl,
     this.action,
   });
 
   final String title;
   final String message;
   final IconData icon;
+  final String? lottieUrl;
   final Widget? action;
 
   @override
@@ -32,15 +35,34 @@ class EmptyStateView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(AppRadius.small),
+          if (lottieUrl != null)
+            SizedBox(
+              width: 120,
+              height: 120,
+              child: Lottie.network(
+                lottieUrl!,
+                repeat: true,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(AppRadius.small),
+                  ),
+                  child: Icon(icon, size: 24, color: colorScheme.primary),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppRadius.small),
+              ),
+              child: Icon(icon, size: 24, color: colorScheme.primary),
             ),
-            child: Icon(icon, size: 24, color: colorScheme.primary),
-          ),
           const SizedBox(height: 14),
           Text(
             title,

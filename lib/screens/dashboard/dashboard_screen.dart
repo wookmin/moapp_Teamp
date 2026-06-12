@@ -107,6 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (!summary.hasConnectedData)
                 const EmptyStateView(
                   icon: Icons.kitchen_outlined,
+                  lottieUrl: 'https://assets9.lottiefiles.com/packages/lf20_ttvteyvs.json',
                   title: '냉장고가 비었어요!',
                   message: '+ 버튼을 눌러 식품을 추가하면\n신선도, 임박 품목, 오늘의 추천이 표시됩니다.',
                 )

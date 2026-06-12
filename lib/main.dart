@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/auth/auth_gate.dart';
 import 'screens/expiry_management/expiry_management_screen.dart';
@@ -27,6 +28,7 @@ Future<void> main() async {
   final firebaseEnabled = await FirebaseBootstrap.initialize();
   AppRepositories.configure(firebaseEnabled: firebaseEnabled);
   await NotificationService.instance.initialize();
+  await initializeDateFormatting('ko_KR');
   runApp(const TeamProjectApp());
 }
 

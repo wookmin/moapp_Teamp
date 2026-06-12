@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../models/food_item.dart';
 import '../../models/price_trend.dart';
@@ -1056,31 +1057,49 @@ class _CartItemTile extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: CheckboxListTile(
-        value: item.isChecked,
-        onChanged: (value) => onToggle(value ?? false),
-        controlAffinity: ListTileControlAffinity.leading,
-        title: Text(
-          item.name,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            decoration: item.isChecked ? TextDecoration.lineThrough : null,
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Slidable(
+        key: ValueKey(item.id),
+        endActionPane: ActionPane(
+          motion: const BehindMotion(),
+          dismissible: DismissiblePane(onDismissed: onDelete),
+          children: [
+            SlidableAction(
+              onPressed: (_) => onDelete(),
+              backgroundColor: const Color(0xFFC0392B),
+              foregroundColor: Colors.white,
+              icon: Icons.delete_rounded,
+              label: '삭제',
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ],
         ),
-        subtitle: item.note.isEmpty
-            ? null
-            : Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis),
-        secondary: IconButton(
-          onPressed: onDelete,
-          icon: const Icon(Icons.delete_outline_rounded),
-          color: colorScheme.error,
-          tooltip: '장바구니 삭제',
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: CheckboxListTile(
+            value: item.isChecked,
+            onChanged: (value) => onToggle(value ?? false),
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              item.name,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                decoration: item.isChecked ? TextDecoration.lineThrough : null,
+              ),
+            ),
+            subtitle: item.note.isEmpty
+                ? null
+                : Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis),
+            secondary: Icon(
+              Icons.chevron_left_rounded,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              size: 20,
+            ),
+          ),
         ),
       ),
     );
