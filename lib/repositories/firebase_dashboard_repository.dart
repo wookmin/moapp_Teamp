@@ -1,6 +1,7 @@
 import '../models/food_item.dart';
 import '../models/freshness_summary.dart';
 import '../models/recipe.dart';
+import '../services/freshness_calculator.dart';
 import '../services/recipe_recommendation_service.dart';
 import 'dashboard_repository.dart';
 import 'firebase_expiry_repository.dart';
@@ -32,8 +33,7 @@ class FirebaseDashboardRepository implements DashboardRepository {
 
     // ── 2단계: 신선도 점수 계산 (즉시, API 없음) ──
     final urgentFoods = items.where((f) => f.isUrgent).toList();
-    final freshCount = items.where((f) => f.daysLeft > 7).length;
-    final score = ((freshCount / items.length) * 100).round();
+    final score = FreshnessCalculator.calculate(items);
 
     return FreshnessSummary(
       score: score,
