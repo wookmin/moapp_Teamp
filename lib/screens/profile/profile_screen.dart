@@ -2,15 +2,46 @@ import 'package:flutter/material.dart';
 
 import '../../models/profile_data.dart';
 import '../../repositories/app_repositories.dart';
-import '../../services/notification_service.dart';
+import '../../services/in_app_notification_service.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/shimmer_card.dart';
 import '../community/saved_tips_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<ProfileData> _profileFuture;
+  bool _hasUnread = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = AppRepositories.profile.fetchProfile();
+    _checkUnread();
+  }
+
+  Future<void> _checkUnread() async {
+    try {
+      final foods = await AppRepositories.expiry.fetchExpiryItems();
+      final hasToday = foods.any((f) => f.daysLeft <= 0);
+      if (mounted) setState(() => _hasUnread = hasToday);
+    } catch (_) {}
+  }
+
+  Future<void> _onNotificationTap() async {
+    try {
+      final foods = await AppRepositories.expiry.fetchExpiryItems();
+      await showExpiryInAppNotifications(foods, daysThreshold: 0);
+    } catch (_) {}
+    if (mounted) setState(() => _hasUnread = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +51,7 @@ class ProfileScreen extends StatelessWidget {
         currentRoute: '/profile',
       ),
       body: FutureBuilder<ProfileData>(
-        future: AppRepositories.profile.fetchProfile(),
+        future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const _ProfileLoadingView();
@@ -47,7 +78,11 @@ class ProfileScreen extends StatelessWidget {
                 _SectionLabel('계정 관리'),
                 const SizedBox(height: 12),
                 ...profile.menuItems.map(
-                  (menu) => _ProfileMenuTile(menu: menu),
+                  (menu) => _ProfileMenuTile(
+                    menu: menu,
+                    hasUnread: menu.actionKey == 'notifications' && _hasUnread,
+                    onNotificationTap: _onNotificationTap,
+                  ),
                 ),
               ],
               const SizedBox(height: 22),
@@ -64,7 +99,6 @@ class ProfileScreen extends StatelessWidget {
 
 class _ProfileHeaderCard extends StatelessWidget {
   const _ProfileHeaderCard({required this.profile});
-
   final ProfileData profile;
 
   @override
@@ -118,7 +152,6 @@ class _ProfileHeaderCard extends StatelessWidget {
 
 class _ProfileChip extends StatelessWidget {
   const _ProfileChip({required this.label});
-
   final String label;
 
   @override
@@ -136,7 +169,6 @@ class _ProfileChip extends StatelessWidget {
 
 class _FreshnessScoreCard extends StatelessWidget {
   const _FreshnessScoreCard({required this.score});
-
   final int score;
 
   @override
@@ -169,7 +201,6 @@ class _FreshnessScoreCard extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.label);
-
   final String label;
 
   @override
@@ -185,70 +216,83 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _ProfileMenuTile extends StatelessWidget {
-  const _ProfileMenuTile({required this.menu});
+  const _ProfileMenuTile({
+    required this.menu,
+    this.hasUnread = false,
+    this.onNotificationTap,
+  });
 
   final ProfileMenuItem menu;
+  final bool hasUnread;
+  final VoidCallback? onNotificationTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accent = menu.isDestructive
-        ? const Color(0xFFD9502B)
-        : colorScheme.primary;
+    final accent =
+        menu.isDestructive ? const Color(0xFFD9502B) : colorScheme.primary;
+
+    Widget leadingIcon = Icon(_iconFor(menu.actionKey), color: accent);
+    if (menu.actionKey == 'notifications' && hasUnread) {
+      leadingIcon = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(_iconFor(menu.actionKey), color: accent),
+          Positioned(
+            top: -2,
+            right: -2,
+            child: Container(
+              width: 9,
+              height: 9,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE03A47),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       child: ListTile(
-        leading: Icon(_iconFor(menu.actionKey), color: accent),
+        leading: leadingIcon,
         title: Text(menu.title),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () async {
-          if (menu.actionKey == 'signOut') {
-            await AppRepositories.auth.signOut();
-            if (context.mounted) {
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/login', (route) => false);
-            }
-          } else if (menu.actionKey == 'expiry') {
-            Navigator.of(context).pushNamed('/expiry-management');
-          } else if (menu.actionKey == 'shopping') {
-            Navigator.of(context).pushNamed('/shopping-recommendations');
-          } else if (menu.actionKey == 'saved_tips') {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SavedTipsScreen()),
-            );
-          } else if (menu.actionKey == 'notifications') {
-            final granted =
-                await NotificationService.instance.requestPermissions();
-
-            if (!context.mounted) return;
-
-            if (!granted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('알림 권한이 꺼져 있어요.')),
-              );
-              return;
-            }
-
-            final foods = await AppRepositories.expiry.fetchExpiryItems();
-            final count =
-                await NotificationService.instance.showTodayExpiryAlerts(foods);
-
-            if (context.mounted) {
-              final message = count == 0
-                  ? '오늘 만료되는 식재료가 없어요.'
-                  : '오늘 만료되는 식재료 $count개를 알려드렸어요.';
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
-              );
-            }
+        onTap: () {
+          if (menu.actionKey == 'notifications') {
+            onNotificationTap?.call();
+            return;
           }
+          if (!context.mounted) return;
+          _handleTap(context);
         },
       ),
     );
+  }
+
+  void _handleTap(BuildContext context) {
+    switch (menu.actionKey) {
+      case 'signOut':
+        AppRepositories.auth.signOut().then((_) {
+          if (context.mounted) {
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
+          }
+        });
+      case 'expiry':
+        Navigator.of(context).pushNamed('/expiry-management');
+      case 'shopping':
+        Navigator.of(context).pushNamed('/shopping-recommendations');
+      case 'saved_tips':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const SavedTipsScreen()),
+        );
+      default:
+        break;
+    }
   }
 
   IconData _iconFor(String actionKey) {
@@ -256,7 +300,7 @@ class _ProfileMenuTile extends StatelessWidget {
       'fridge' => Icons.kitchen_outlined,
       'expiry' => Icons.kitchen_outlined,
       'shopping' => Icons.shopping_bag_outlined,
-      'notifications' => Icons.notifications_active_outlined,
+      'notifications' => Icons.notifications_outlined,
       'saved_tips' => Icons.bookmark_border_rounded,
       'settings' => Icons.settings_outlined,
       'signOut' => Icons.logout_rounded,
@@ -366,9 +410,8 @@ class _CommunityCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           FilledButton(
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/community', (route) => false),
+            onPressed: () => Navigator.of(context)
+                .pushNamedAndRemoveUntil('/community', (route) => false),
             child: const Text('그룹 둘러보기'),
           ),
         ],
@@ -389,7 +432,7 @@ class _ProfileLoadingView extends StatelessWidget {
         SizedBox(height: 16),
         ShimmerCard(height: 120, borderRadius: 28),
         SizedBox(height: 30),
-        ShimmerCard(height: 18, width: 90, borderRadius: 9),
+        ShimmerCard(height: 18, borderRadius: 9),
         SizedBox(height: 12),
         ShimmerCard(height: 64, borderRadius: 16),
         SizedBox(height: 12),

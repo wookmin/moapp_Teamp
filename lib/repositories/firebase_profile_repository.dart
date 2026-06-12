@@ -36,7 +36,6 @@ class FirebaseProfileRepository implements ProfileRepository {
         ProfileMenuItem(title: '냉장고 관리', actionKey: 'expiry'),
         ProfileMenuItem(title: '쇼핑 추천', actionKey: 'shopping'),
         ProfileMenuItem(title: '저장된 팁', actionKey: 'saved_tips'),
-        ProfileMenuItem(title: '오늘 만료 알림 확인', actionKey: 'notifications'),
 
         ProfileMenuItem(
           title: '로그아웃',
