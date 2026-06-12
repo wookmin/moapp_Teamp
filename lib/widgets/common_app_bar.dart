@@ -6,10 +6,14 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.showBackButton = false,
     this.onNotificationTap,
+    this.bellIcon,
   });
 
   final bool showBackButton;
   final VoidCallback? onNotificationTap;
+
+  /// 커스텀 종 아이콘 (빨간 점 오버레이 등). null이면 기본 아이콘 사용.
+  final Widget? bellIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -43,11 +47,12 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(
             onPressed: onNotificationTap,
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: colorScheme.onSurface,
-              size: 24,
-            ),
+            icon: bellIcon ??
+                Icon(
+                  Icons.notifications_none_rounded,
+                  color: colorScheme.onSurface,
+                  size: 24,
+                ),
             tooltip: '알림',
           ),
         ),

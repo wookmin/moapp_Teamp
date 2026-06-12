@@ -9,18 +9,21 @@ import 'screens/food_add/food_add_method_screen.dart';
 import 'screens/food_add/manual_food_add_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/profile/profile_screen.dart';
-import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/shopping_recommendations/shopping_recommendations_screen.dart';
+import 'screens/storage_search/storage_rulebook_screen.dart';
 import 'screens/storage_search/storage_search_screen.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/in_app_notification_service.dart';
 import 'services/notification_service.dart';
 
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await FirebaseBootstrap.initialize();
   await NotificationService.instance.initialize();
+  InAppNotificationService.instance.setNavigatorKey(_navigatorKey);
   runApp(const TeamProjectApp());
 }
 
@@ -30,6 +33,7 @@ class TeamProjectApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Team Project',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
