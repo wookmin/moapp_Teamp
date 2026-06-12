@@ -20,37 +20,37 @@ class _StorageRulebookScreenState extends State<StorageRulebookScreen> {
     _StorageRulebookCategory(
       title: '육류',
       description: '고기류 보관 기준',
-      icon: Icons.set_meal_outlined,
+      imagePath: 'assets/categories/meat.jpg',
       ingredients: ['육류'],
     ),
     _StorageRulebookCategory(
       title: '생선류',
       description: '어류와 수산물',
-      icon: Icons.phishing_rounded,
+      imagePath: 'assets/categories/seafood.jpg',
       ingredients: ['생선', '어류'],
     ),
     _StorageRulebookCategory(
       title: '유제품·가공',
       description: '우유, 두부, 버터',
-      icon: Icons.local_drink_outlined,
+      imagePath: 'assets/categories/dairy.jpg',
       ingredients: ['우유', '두부', '버터', '마요네즈'],
     ),
     _StorageRulebookCategory(
       title: '채소',
       description: '잎채소와 뿌리채소',
-      icon: Icons.eco_outlined,
+      imagePath: 'assets/categories/vegetable.jpg',
       ingredients: ['고구마', '대파', '시금치', '무', '양파', '당근', '오이', '마늘', '고추'],
     ),
     _StorageRulebookCategory(
       title: '과일',
       description: '후숙과 냉장 기준',
-      icon: Icons.spa_outlined,
+      imagePath: 'assets/categories/fruit.jpg',
       ingredients: ['사과', '수박', '포도', '멜론', '바나나', '귤', '파인애플'],
     ),
     _StorageRulebookCategory(
       title: '곡류·견과',
       description: '빵과 견과류',
-      icon: Icons.grain_outlined,
+      imagePath: 'assets/categories/grain.jpg',
       ingredients: ['빵', '견과류'],
     ),
   ];
@@ -193,13 +193,13 @@ class _StorageRulebookCategory {
   const _StorageRulebookCategory({
     required this.title,
     required this.description,
-    required this.icon,
+    required this.imagePath,
     required this.ingredients,
   });
 
   final String title;
   final String description;
-  final IconData icon;
+  final String imagePath;
   final List<String> ingredients;
 }
 
@@ -334,6 +334,7 @@ class _StorageRulebookCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
@@ -341,31 +342,48 @@ class _StorageRulebookCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(category.icon, color: colorScheme.primary),
-              const SizedBox(height: 10),
-              Text(
-                category.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Image.asset(
+                category.imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: colorScheme.surfaceContainerHighest,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                category.description,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    category.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

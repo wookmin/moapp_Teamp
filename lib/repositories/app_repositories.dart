@@ -16,6 +16,8 @@ import 'recipe_repository.dart';
 import 'shopping_recommendation_repository.dart';
 import 'shopping_cart_repository.dart';
 import 'storage_search_repository.dart';
+import 'firebase_shared_fridge_repository.dart';
+import 'shared_fridge_repository.dart';
 
 class AppRepositories {
   const AppRepositories._();
@@ -31,5 +33,7 @@ class AppRepositories {
       KamisShoppingRecommendationRepository();
   static final ShoppingCartRepository shoppingCart =
       FirebaseShoppingCartRepository();
+  static final SharedFridgeRepository sharedFridges =
+      FirebaseSharedFridgeRepository();
   static const RecipeRepository recipes = PlaceholderRecipeRepository();
 }

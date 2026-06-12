@@ -59,7 +59,19 @@
 				<string>com.googleusercontent.apps.906453738197-tepvt0j6vsbs5srg5ddiu1bq5osft15j</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>장보고 공유 냉장고 초대</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>jangbogo</string>
+			</array>
+		</dict>
 	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

@@ -6,6 +6,32 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isFridgeOwner(ownerUid) {
+      return isSignedIn() && request.auth.uid == ownerUid;
+    }
+
+    function isFridgeMember(ownerUid) {
+      return isFridgeOwner(ownerUid)
+        || (
+          isSignedIn()
+          && exists(
+            /databases/$(database)/documents/users/$(ownerUid)
+              /fridge_members/$(request.auth.uid)
+          )
+        );
+    }
+
+    function canEditFridge(ownerUid) {
+      return isFridgeOwner(ownerUid)
+        || (
+          isSignedIn()
+          && get(
+            /databases/$(database)/documents/users/$(ownerUid)
+              /fridge_members/$(request.auth.uid)
+          ).data.role == 'editor'
+        );
+    }
+
     match /ingredient_search_index/{keywordId} {
       allow read: if true;
       allow write: if false;
@@ -44,11 +70,46 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
 
       match /food_items/{foodItemId} {
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
+        allow read: if isFridgeMember(userId);
+        allow create, update, delete: if canEditFridge(userId);
       }
 
       match /shopping_cart_items/{cartItemId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /fridge_access/{ownerUid} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /fridge_members/{memberUid} {
+        allow read: if isSignedIn()
+          && (request.auth.uid == userId || request.auth.uid == memberUid);
+        allow create: if isSignedIn()
+          && request.auth.uid == memberUid
+          && request.resource.data.inviteCode is string
+          && exists(
+            /databases/$(database)/documents/users/$(userId)
+              /fridge_invites/$(request.resource.data.inviteCode)
+          )
+          && get(
+            /databases/$(database)/documents/users/$(userId)
+              /fridge_invites/$(request.resource.data.inviteCode)
+          ).data.active == true
+          && get(
+            /databases/$(database)/documents/users/$(userId)
+              /fridge_invites/$(request.resource.data.inviteCode)
+          ).data.expiresAt > request.time
+          && request.resource.data.role == get(
+            /databases/$(database)/documents/users/$(userId)
+              /fridge_invites/$(request.resource.data.inviteCode)
+          ).data.role;
+        allow update, delete: if isFridgeOwner(userId);
+      }
+
+      match /fridge_invites/{inviteCode} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isFridgeOwner(userId);
       }
     }
   }
