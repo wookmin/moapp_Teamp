@@ -5,6 +5,7 @@ import 'package:teamproject/repositories/app_repositories.dart';
 import 'package:teamproject/screens/login/login_screen.dart';
 import 'package:teamproject/theme/app_theme.dart';
 import 'package:teamproject/widgets/app_shell.dart';
+import 'package:teamproject/widgets/common_app_bar.dart';
 
 void main() {
   setUp(() {
@@ -74,6 +75,22 @@ void main() {
 
     expect(find.text('먹을 건 놓치지 않고,\n살 건 정확하게'), findsOneWidget);
     expect(find.textContaining('웹 미리보기에서는'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('common app bar opens notifications by default', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(appBar: CommonAppBar()),
+      ),
+    );
+
+    await tester.tap(find.byTooltip('알림'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('알림'), findsOneWidget);
+    expect(find.text('새로운 알림이 없어요'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../screens/notifications/notification_center_screen.dart';
+
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CommonAppBar({
     super.key,
@@ -46,7 +48,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(
-            onPressed: onNotificationTap,
+            onPressed: onNotificationTap ?? () => _openNotifications(context),
             icon:
                 bellIcon ??
                 Icon(
@@ -58,6 +60,12 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const NotificationCenterScreen()),
     );
   }
 }
