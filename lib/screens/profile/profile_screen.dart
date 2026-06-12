@@ -11,9 +11,10 @@ import '../../widgets/app_shell.dart';
 import '../community/saved_tips_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, this.embedded = false});
+  const ProfileScreen({super.key, this.embedded = false, this.isActive = true});
 
   final bool embedded;
+  final bool isActive;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -26,8 +27,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _profileFuture = AppRepositories.profile.fetchProfile();
+    _refreshProfile();
     _checkUnread();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      setState(_refreshProfile);
+      _checkUnread();
+    }
+  }
+
+  void _refreshProfile() {
+    _profileFuture = AppRepositories.profile.fetchProfile();
   }
 
   Future<void> _checkUnread() async {

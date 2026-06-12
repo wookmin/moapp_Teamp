@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:teamproject/repositories/app_repositories.dart';
 import 'package:teamproject/screens/login/login_screen.dart';
+import 'package:teamproject/models/food_item.dart';
+import 'package:teamproject/services/freshness_calculator.dart';
 import 'package:teamproject/theme/app_theme.dart';
 import 'package:teamproject/widgets/app_shell.dart';
 import 'package:teamproject/widgets/common_app_bar.dart';
@@ -10,6 +12,25 @@ import 'package:teamproject/widgets/common_app_bar.dart';
 void main() {
   setUp(() {
     AppRepositories.configure(firebaseEnabled: false);
+  });
+
+  test('freshness score uses one shared calculation', () {
+    final now = DateTime.now();
+    final foods = [
+      FoodItem(
+        id: 'fresh',
+        name: '신선한 재료',
+        expiryDate: now.add(const Duration(days: 20)),
+      ),
+      FoodItem(
+        id: 'urgent',
+        name: '임박 재료',
+        expiryDate: now.add(const Duration(days: 2)),
+      ),
+    ];
+
+    expect(FreshnessCalculator.calculate(const []), 0);
+    expect(FreshnessCalculator.calculate(foods), 50);
   });
 
   testWidgets('main shell renders and switches tabs at 390x844', (

@@ -2,15 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/profile_data.dart';
+import '../services/freshness_calculator.dart';
+import 'firebase_expiry_repository.dart';
 import 'profile_repository.dart';
 
 class FirebaseProfileRepository implements ProfileRepository {
-  FirebaseProfileRepository({FirebaseFirestore? firestore, FirebaseAuth? auth})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
-      _auth = auth ?? FirebaseAuth.instance;
+  FirebaseProfileRepository({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    FirebaseExpiryRepository? expiryRepository,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _auth = auth ?? FirebaseAuth.instance,
+       _expiryRepository =
+           expiryRepository ??
+           FirebaseExpiryRepository(firestore: firestore, auth: auth);
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final FirebaseExpiryRepository _expiryRepository;
 
   @override
   Future<ProfileData> fetchProfile() async {
@@ -26,7 +35,8 @@ class FirebaseProfileRepository implements ProfileRepository {
         ? data['name'] as String
         : user.email ?? '사용자';
     final subtitle = data['subtitle'] as String? ?? '냉장고 관리 중';
-    final freshnessScore = (data['freshnessScore'] as num?)?.toInt() ?? 0;
+    final foods = await _expiryRepository.fetchExpiryItems();
+    final freshnessScore = FreshnessCalculator.calculate(foods);
 
     return ProfileData(
       name: name,

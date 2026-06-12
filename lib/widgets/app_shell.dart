@@ -46,14 +46,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late int _currentIndex = widget.initialIndex;
 
-  final _screens = const [
-    DashboardScreen(embedded: true),
-    StorageSearchScreen(embedded: true),
-    CommunityScreen(embedded: true),
-    ShoppingRecommendationsScreen(embedded: true),
-    ProfileScreen(embedded: true),
-  ];
-
   void selectTab(int index) {
     if (_currentIndex == index || !mounted) return;
     setState(() => _currentIndex = index);
@@ -61,8 +53,16 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      const DashboardScreen(embedded: true),
+      const StorageSearchScreen(embedded: true),
+      const CommunityScreen(embedded: true),
+      const ShoppingRecommendationsScreen(embedded: true),
+      ProfileScreen(embedded: true, isActive: _currentIndex == 4),
+    ];
+
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: AppBottomNavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: selectTab,
