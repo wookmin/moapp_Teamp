@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../repositories/app_repositories.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.firebaseAvailable = true});
+
+  final bool firebaseAvailable;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -85,16 +87,8 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<void> _signInWithKakao() {
-    return _runAuthAction(AppRepositories.auth.signInWithKakao);
-  }
-
   Future<void> _signInWithGoogle() {
     return _runAuthAction(AppRepositories.auth.signInWithGoogle);
-  }
-
-  Future<void> _signInWithApple() {
-    return _runAuthAction(AppRepositories.auth.signInWithApple);
   }
 
   @override
@@ -105,16 +99,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
           children: [
             SvgPicture.asset(
               'assets/appLogo.svg',
               height: 36,
               alignment: Alignment.centerLeft,
             ),
-            const SizedBox(height: 54),
+            const SizedBox(height: 64),
             Text(
-              '오늘의 냉장고를\n바로 확인하세요',
+              '먹을 건 놓치지 않고,\n살 건 정확하게',
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w800,
                 height: 1.2,
@@ -123,35 +117,45 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '소비기한 알림, 보관 팁, 장보기 추천을 계정에 맞춰 이어서 사용할 수 있어요.',
+              '냉장고 속 재료와 소비기한을 정리하고 필요한 장보기만 빠르게 확인하세요.',
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 height: 1.45,
               ),
             ),
-            const SizedBox(height: 42),
-            _SocialLoginButton(
-              label: '카카오로 계속하기',
-              icon: Icons.chat_bubble_rounded,
-              backgroundColor: const Color(0xFFFFE812),
-              foregroundColor: const Color(0xFF241E1F),
-              onPressed: _isLoading ? null : _signInWithKakao,
-            ),
-            const SizedBox(height: 12),
-            _SocialLoginButton(
-              label: 'Google로 계속하기',
-              icon: Icons.g_mobiledata_rounded,
-              backgroundColor: Colors.grey,
-              foregroundColor: Colors.white,
-              onPressed: _isLoading ? null : _signInWithGoogle,
-            ),
-            const SizedBox(height: 12),
-            _SocialLoginButton(
-              label: 'Apple로 계속하기',
-              icon: Icons.apple_rounded,
-              backgroundColor: colorScheme.onSurface,
-              foregroundColor: colorScheme.surface,
-              onPressed: _isLoading ? null : _signInWithApple,
+            const SizedBox(height: 36),
+            if (!widget.firebaseAvailable) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.devices_outlined,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '웹 미리보기에서는 화면만 확인할 수 있어요. 계정과 냉장고 데이터는 모바일 앱에서 연결됩니다.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
+            _GoogleLoginButton(
+              onPressed: _isLoading || !widget.firebaseAvailable
+                  ? null
+                  : _signInWithGoogle,
             ),
             const SizedBox(height: 28),
             Row(
@@ -171,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 18),
             OutlinedButton.icon(
-              onPressed: _showEmailLogin,
+              onPressed: widget.firebaseAvailable ? _showEmailLogin : null,
               icon: const Icon(Icons.mail_outline_rounded),
               label: const Text('이메일로 계속하기'),
               style: OutlinedButton.styleFrom(
@@ -199,7 +203,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword = !_obscurePassword;
                           });
                         },
-                        onSubmit: _isSignUp ? _createUserWithEmail : _signInWithEmail,
+                        onSubmit: _isSignUp
+                            ? _createUserWithEmail
+                            : _signInWithEmail,
                         onToggleSignUp: () {
                           setState(() {
                             _isSignUp = !_isSignUp;
@@ -350,36 +356,40 @@ class _EmailLoginForm extends StatelessWidget {
   }
 }
 
-class _SocialLoginButton extends StatelessWidget {
-  const _SocialLoginButton({
-    required this.label,
-    required this.icon,
-    required this.backgroundColor,
-    required this.foregroundColor,
-    required this.onPressed,
-  });
+class _GoogleLoginButton extends StatelessWidget {
+  const _GoogleLoginButton({required this.onPressed});
 
-  final String label;
-  final IconData icon;
-  final Color backgroundColor;
-  final Color foregroundColor;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.icon(
+    return OutlinedButton(
       onPressed: onPressed,
-      icon: Icon(icon),
-      label: Text(label),
-      style: FilledButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
-        elevation: 0,
+      style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        textStyle: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Text(
+              'G',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text('Google로 계속하기'),
+        ],
       ),
     );
   }

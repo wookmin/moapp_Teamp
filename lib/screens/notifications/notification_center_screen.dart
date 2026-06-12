@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../models/food_item.dart';
 import '../../repositories/app_repositories.dart';
 
 /// 알림 센터 화면 — 토스/카카오 스타일
@@ -23,8 +22,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   Future<List<_NotificationItem>> _buildNotifications() async {
     final foods = await AppRepositories.expiry.fetchExpiryItems();
-    final now = DateTime.now();
-
     final items = <_NotificationItem>[];
 
     // 오늘 만료

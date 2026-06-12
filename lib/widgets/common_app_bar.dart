@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../screens/notifications/notification_center_screen.dart';
+
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CommonAppBar({
     super.key,
@@ -16,7 +18,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? bellIcon;
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(60);
 
   @override
   Widget build(BuildContext context) {
@@ -34,20 +36,21 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
               tooltip: '뒤로가기',
             )
           : null,
-      toolbarHeight: 72,
+      toolbarHeight: 60,
       elevation: 0,
       scrolledUnderElevation: 0,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       titleSpacing: showBackButton ? 0 : 20,
-      title: SvgPicture.asset('assets/appLogo.svg', height: 30),
+      title: SvgPicture.asset('assets/appLogo.svg', height: 27),
       centerTitle: false,
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(
-            onPressed: onNotificationTap,
-            icon: bellIcon ??
+            onPressed: onNotificationTap ?? () => _openNotifications(context),
+            icon:
+                bellIcon ??
                 Icon(
                   Icons.notifications_none_rounded,
                   color: colorScheme.onSurface,
@@ -57,6 +60,12 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const NotificationCenterScreen()),
     );
   }
 }

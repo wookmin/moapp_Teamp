@@ -30,6 +30,9 @@ class FirebaseSharedFridgeRepository implements SharedFridgeRepository {
   CollectionReference<Map<String, dynamic>> get _memberships =>
       _user(_uid).collection('fridge_access');
 
+  CollectionReference<Map<String, dynamic>> get _inviteCodes =>
+      _firestore.collection('fridge_invite_codes');
+
   @override
   Future<List<SharedFridge>> fetchMySharedFridges() async {
     final snapshot = await _memberships.orderBy('createdAt').get();
@@ -65,11 +68,10 @@ class FirebaseSharedFridgeRepository implements SharedFridgeRepository {
         : owner.displayName?.trim().isNotEmpty == true
         ? owner.displayName!.trim()
         : owner.email?.split('@').first ?? '친구';
-    final fridgeName = '$ownerName님의 냉장고';
-    final code = _generateCode();
+    final fridgeName = '$ownerName 님의 냉장고';
+    final code = await _generateUniqueCode();
     final expiresAt = DateTime.now().add(const Duration(days: 7));
-
-    await _user(ownerUid).collection('fridge_invites').doc(code).set({
+    final inviteData = {
       'ownerUid': ownerUid,
       'fridgeName': fridgeName,
       'createdBy': ownerUid,
@@ -77,7 +79,15 @@ class FirebaseSharedFridgeRepository implements SharedFridgeRepository {
       'active': true,
       'expiresAt': Timestamp.fromDate(expiresAt),
       'createdAt': FieldValue.serverTimestamp(),
-    });
+    };
+    final batch = _firestore.batch();
+
+    batch.set(
+      _user(ownerUid).collection('fridge_invites').doc(code),
+      inviteData,
+    );
+    batch.set(_inviteCodes.doc(code), inviteData);
+    await batch.commit();
 
     return SharedFridgeInvite(
       ownerUid: ownerUid,
@@ -109,6 +119,34 @@ class FirebaseSharedFridgeRepository implements SharedFridgeRepository {
     return SharedFridgeInvite(
       ownerUid: ownerUid,
       code: code,
+      fridgeName: data['fridgeName'] as String? ?? '친구의 냉장고',
+      role: data['role'] as String? ?? 'viewer',
+      expiresAt: expiresAt,
+    );
+  }
+
+  @override
+  Future<SharedFridgeInvite> fetchInviteByCode(String code) async {
+    final normalizedCode = code.trim().toUpperCase();
+    final snapshot = await _inviteCodes.doc(normalizedCode).get();
+    final data = snapshot.data();
+    if (!snapshot.exists || data == null || data['active'] != true) {
+      throw StateError('사용할 수 없는 초대 코드입니다.');
+    }
+
+    final expiresAt = (data['expiresAt'] as Timestamp?)?.toDate();
+    if (expiresAt == null || expiresAt.isBefore(DateTime.now())) {
+      throw StateError('초대 코드가 만료되었습니다.');
+    }
+
+    final ownerUid = data['ownerUid'] as String? ?? '';
+    if (ownerUid.isEmpty) {
+      throw StateError('올바르지 않은 초대 코드입니다.');
+    }
+
+    return SharedFridgeInvite(
+      ownerUid: ownerUid,
+      code: normalizedCode,
       fridgeName: data['fridgeName'] as String? ?? '친구의 냉장고',
       role: data['role'] as String? ?? 'viewer',
       expiresAt: expiresAt,
@@ -181,11 +219,20 @@ class FirebaseSharedFridgeRepository implements SharedFridgeRepository {
     });
   }
 
+  Future<String> _generateUniqueCode() async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final code = _generateCode();
+      final snapshot = await _inviteCodes.doc(code).get();
+      if (!snapshot.exists) return code;
+    }
+    throw StateError('초대 코드를 만들지 못했어요. 다시 시도해주세요.');
+  }
+
   String _generateCode() {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final random = Random.secure();
     return List.generate(
-      20,
+      8,
       (_) => alphabet[random.nextInt(alphabet.length)],
     ).join();
   }

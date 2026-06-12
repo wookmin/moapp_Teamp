@@ -8,10 +8,13 @@ import '../../repositories/app_repositories.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/food_icon.dart';
 import 'shared_fridge_invite_screen.dart';
 
 class StorageSearchScreen extends StatefulWidget {
-  const StorageSearchScreen({super.key});
+  const StorageSearchScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<StorageSearchScreen> createState() => _StorageSearchScreenState();
@@ -126,7 +129,9 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
           subject: '${invite.fridgeName} 초대',
           text:
               '${invite.fridgeName}를 함께 볼 수 있도록 초대했어요.\n'
-              '장보고 앱에서 아래 링크를 열어 참여해주세요.\n${invite.uri}',
+              '장보고 앱의 친구 냉장고에서 아래 초대 코드를 입력해주세요.\n\n'
+              '초대 코드: ${invite.code}\n'
+              '유효 기간: 7일',
           sharePositionOrigin: box == null
               ? null
               : box.localToGlobal(Offset.zero) & box.size,
@@ -134,59 +139,43 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      _showMessage('초대 링크를 만들지 못했어요: $error');
+      final message = error.toString().replaceFirst('Exception: ', '');
+      _showMessage(
+        message.contains('permission-denied')
+            ? '초대 코드를 만들 권한이 없어요. 잠시 후 다시 시도해주세요.'
+            : '초대 코드를 만들지 못했어요: $message',
+      );
     }
   }
 
   Future<void> _pasteInviteLink() async {
-    final controller = TextEditingController();
-    final link = await showDialog<String>(
+    final code = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('초대 링크로 참여'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            minLines: 2,
-            maxLines: 3,
-            decoration: const InputDecoration(hintText: '받은 초대 링크를 붙여넣으세요.'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final value = controller.text.trim();
-                if (value.isNotEmpty) Navigator.of(context).pop(value);
-              },
-              child: const Text('확인'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => const _InviteLinkDialog(),
     );
-    controller.dispose();
-    if (link == null || !mounted) return;
+    if (code == null || !mounted) return;
 
-    final uri = Uri.tryParse(link);
-    final segments = uri?.pathSegments ?? const [];
-    if (uri?.scheme != 'jangbogo' ||
-        uri?.host != 'invite' ||
-        segments.length < 2) {
-      _showMessage('올바른 장보고 초대 링크가 아니에요.');
-      return;
+    try {
+      final invite = await AppRepositories.sharedFridges.fetchInviteByCode(
+        code,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).pushNamed(
+        '/shared-fridge-invite',
+        arguments: SharedFridgeInviteArguments(
+          ownerUid: invite.ownerUid,
+          code: invite.code,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage(
+        error
+            .toString()
+            .replaceFirst('Bad state: ', '')
+            .replaceFirst('StateError: ', ''),
+      );
     }
-
-    await Navigator.of(context).pushNamed(
-      '/shared-fridge-invite',
-      arguments: SharedFridgeInviteArguments(
-        ownerUid: segments[0],
-        code: segments[1],
-      ),
-    );
     if (mounted) _refreshSharedFridges();
   }
 
@@ -282,18 +271,20 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(
-        currentRoute: '/storage-search',
-      ),
+      bottomNavigationBar: widget.embedded
+          ? null
+          : const AppBottomNavigationBar(currentRoute: '/storage-search'),
       floatingActionButton: _selectedFridge == 0
           ? FloatingActionButton.extended(
               onPressed: _openAddFood,
+              heroTag: 'storage-add-food',
               icon: const Icon(Icons.add_rounded),
               label: const Text('추가하기'),
             )
           : _selectedSharedFridge?.canEdit == true
           ? FloatingActionButton.extended(
               onPressed: _addSharedFood,
+              heroTag: 'storage-add-shared-food',
               icon: const Icon(Icons.add_rounded),
               label: const Text('공유 재료 추가'),
             )
@@ -374,6 +365,59 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
       ),
     );
   }
+}
+
+class _InviteLinkDialog extends StatefulWidget {
+  const _InviteLinkDialog();
+
+  @override
+  State<_InviteLinkDialog> createState() => _InviteLinkDialogState();
+}
+
+class _InviteLinkDialogState extends State<_InviteLinkDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('초대 코드 입력'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.characters,
+        maxLength: 8,
+        decoration: const InputDecoration(
+          hintText: '예: A7K9M2QX',
+          helperText: '친구에게 받은 8자리 코드를 입력하세요.',
+          counterText: '',
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: _normalizedCode.length == 8
+              ? () => Navigator.of(context).pop(_normalizedCode)
+              : null,
+          child: const Text('확인'),
+        ),
+      ],
+    );
+  }
+
+  String get _normalizedCode => _controller.text
+      .trim()
+      .toUpperCase()
+      .replaceAll(RegExp(r'[^A-Z0-9]'), '');
 }
 
 class _FridgeHeader extends StatelessWidget {
@@ -602,96 +646,108 @@ class _FridgeCabinet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final visibleFoods = foods.take(24).toList();
-    final hiddenCount = foods.length - visibleFoods.length;
-
-    return Container(
-      width: double.infinity,
-      height: 500,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFFDFEFE), Color(0xFFEAF1F2)],
+    if (foods.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: _EmptyFridge(onAddPressed: canAdd ? onAddPressed : null),
         ),
-        borderRadius: BorderRadius.circular(34),
-        border: Border.all(color: const Color(0xFFCBD6D9), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+      );
+    }
+
+    final expired = foods.where((food) => food.daysLeft < 0).toList();
+    final urgent = foods
+        .where((food) => food.daysLeft >= 0 && food.daysLeft <= 2)
+        .toList();
+    final fresh = foods.where((food) => food.daysLeft > 2).toList();
+
+    return Column(
+      children: [
+        if (expired.isNotEmpty)
+          _FoodStatusGroup(
+            title: '기한 만료',
+            description: '상태를 확인하고 바로 정리하세요',
+            foods: expired,
+            color: const Color(0xFFC64132),
           ),
-        ],
-      ),
-      child: foods.isEmpty
-          ? _EmptyFridge(onAddPressed: canAdd ? onAddPressed : null)
-          : Column(
-              children: [
-                for (var shelf = 0; shelf < 4; shelf++) ...[
-                  Expanded(
-                    child: _FridgeShelf(
-                      foods: visibleFoods.skip(shelf * 6).take(6).toList(),
-                    ),
-                  ),
-                  if (shelf != 3)
-                    Container(
-                      height: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFBECBCD),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                ],
-                if (hiddenCount > 0)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '+$hiddenCount개',
-                        style: TextStyle(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+        if (urgent.isNotEmpty)
+          _FoodStatusGroup(
+            title: '곧 먹어야 해요',
+            description: '48시간 안에 사용할 재료예요',
+            foods: urgent,
+            color: const Color(0xFFAD7200),
+          ),
+        if (fresh.isNotEmpty)
+          _FoodStatusGroup(
+            title: '여유 있어요',
+            description: '남은 기간이 짧은 순서로 보여드려요',
+            foods: fresh,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+      ],
     );
   }
 }
 
-class _FridgeShelf extends StatelessWidget {
-  const _FridgeShelf({required this.foods});
+class _FoodStatusGroup extends StatelessWidget {
+  const _FoodStatusGroup({
+    required this.title,
+    required this.description,
+    required this.foods,
+    required this.color,
+  });
 
+  final String title;
+  final String description;
   final List<FoodItem> foods;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: foods
-          .map(
-            (food) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _FoodToken(food: food),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
+              const SizedBox(width: 8),
+              Text(title, style: theme.textTheme.titleMedium),
+              const Spacer(),
+              Text(
+                '${foods.length}개',
+                style: theme.textTheme.labelMedium?.copyWith(color: color),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          )
-          .toList(),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: Column(
+              children: [
+                for (var i = 0; i < foods.length; i++) ...[
+                  _FoodToken(food: foods[i]),
+                  if (i != foods.length - 1)
+                    const Divider(indent: 68, endIndent: 12),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -709,32 +765,51 @@ class _FoodToken extends StatelessWidget {
       onTap: () => _showFoodDetail(context, food),
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
           children: [
-            Text(_emojiFor(food.name), style: const TextStyle(fontSize: 27)),
-            const SizedBox(height: 4),
-            Text(
-              food.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              food.expiryLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                foodIconFor(food.name, category: food.category),
                 color: color,
-                fontSize: 10,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    food.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${food.storageType.label} · ${food.expiryLabel}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              food.statusLabel,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
                 fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(width: 2),
+            const Icon(Icons.chevron_right_rounded, size: 20),
           ],
         ),
       ),
@@ -897,18 +972,6 @@ class _SharedFridgeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onPasteInvite,
-                icon: const Icon(Icons.link_rounded),
-                label: const Text('받은 초대 링크로 친구 냉장고 연결하기'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
         FutureBuilder<List<SharedFridge>>(
           future: fridgesFuture,
           builder: (context, snapshot) {
@@ -936,11 +999,11 @@ class _SharedFridgeView extends StatelessWidget {
               return EmptyStateView(
                 icon: Icons.group_add_outlined,
                 title: '아직 연결된 친구 냉장고가 없어요',
-                message: '친구가 보낸 링크를 열면 친구의 실제 냉장고를 여기에서 볼 수 있어요.',
+                message: '친구가 보낸 초대 코드를 입력하면 실제 냉장고를 여기에서 볼 수 있어요.',
                 action: OutlinedButton.icon(
                   onPressed: onPasteInvite,
                   icon: const Icon(Icons.link_rounded),
-                  label: const Text('초대 링크 입력'),
+                  label: const Text('초대 코드 입력'),
                 ),
               );
             }
@@ -1026,9 +1089,10 @@ void _showFoodDetail(BuildContext context, FoodItem food) {
                       color: statusColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: Text(
-                      _emojiFor(food.name),
-                      style: const TextStyle(fontSize: 30),
+                    child: Icon(
+                      foodIconFor(food.name, category: food.category),
+                      color: statusColor,
+                      size: 28,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -1130,27 +1194,4 @@ Color _statusColor(FoodItem food) {
 String _formatDate(DateTime date) {
   return '${date.year}.${date.month.toString().padLeft(2, '0')}.'
       '${date.day.toString().padLeft(2, '0')}';
-}
-
-String _emojiFor(String name) {
-  if (name.contains('우유')) return '🥛';
-  if (name.contains('요거트') || name.contains('요구르트')) return '🥣';
-  if (name.contains('두부')) return '⬜';
-  if (name.contains('달걀') || name.contains('계란')) return '🥚';
-  if (name.contains('고기') || name.contains('삼겹') || name.contains('소고기')) {
-    return '🥩';
-  }
-  if (name.contains('생선') || name.contains('고등어')) return '🐟';
-  if (name.contains('사과')) return '🍎';
-  if (name.contains('딸기')) return '🍓';
-  if (name.contains('바나나')) return '🍌';
-  if (name.contains('포도')) return '🍇';
-  if (name.contains('당근')) return '🥕';
-  if (name.contains('버섯')) return '🍄';
-  if (name.contains('양파')) return '🧅';
-  if (name.contains('마늘')) return '🧄';
-  if (name.contains('고추') || name.contains('파프리카')) return '🌶️';
-  if (name.contains('빵')) return '🍞';
-  if (name.contains('밥')) return '🍚';
-  return '🥬';
 }

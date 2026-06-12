@@ -7,10 +7,13 @@ import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/common_app_bar.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/shimmer_card.dart';
+import '../../widgets/app_shell.dart';
 import '../community/saved_tips_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -47,9 +50,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CommonAppBar(),
-      bottomNavigationBar: const AppBottomNavigationBar(
-        currentRoute: '/profile',
-      ),
+      bottomNavigationBar: widget.embedded
+          ? null
+          : const AppBottomNavigationBar(currentRoute: '/profile'),
       body: FutureBuilder<ProfileData>(
         future: _profileFuture,
         builder: (context, snapshot) {
@@ -108,45 +111,66 @@ class _ProfileHeaderCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 30, 22, 30),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Icon(Icons.person_rounded, size: 72, color: colorScheme.primary),
-          const SizedBox(height: 20),
-          Text(
-            profile.name,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: colorScheme.primaryContainer,
+            child: Text(
+              _initialFor(profile.name),
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            profile.subtitle,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(profile.name, style: theme.textTheme.titleLarge),
+                const SizedBox(height: 2),
+                Text(
+                  profile.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (profile.badges.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: profile.badges
+                        .take(2)
+                        .map((label) => _ProfileChip(label: label))
+                        .toList(),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (profile.badges.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: profile.badges
-                  .map((label) => _ProfileChip(label: label))
-                  .toList(),
-            ),
-          ],
+          Icon(
+            Icons.chevron_right_rounded,
+            color: colorScheme.onSurfaceVariant,
+          ),
         ],
       ),
     );
+  }
+
+  String _initialFor(String name) {
+    final clean = name.trim();
+    return clean.isEmpty ? '?' : clean.characters.first.toUpperCase();
   }
 }
 
@@ -159,10 +183,16 @@ class _ProfileChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFF9BF3BA),
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
@@ -177,22 +207,43 @@ class _FreshnessScoreCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 30, 28, 30),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF37B879),
-        borderRadius: BorderRadius.circular(28),
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: Row(
         children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '냉장고 신선도',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: (score / 100).clamp(0, 1),
+                    minHeight: 8,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 20),
           Text(
             '$score%',
-            style: theme.textTheme.displaySmall?.copyWith(
-              color: const Color(0xFF064936),
+            style: theme.textTheme.headlineMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 2),
-          const Text('신선도 점수'),
         ],
       ),
     );
@@ -229,8 +280,9 @@ class _ProfileMenuTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accent =
-        menu.isDestructive ? const Color(0xFFD9502B) : colorScheme.primary;
+    final accent = menu.isDestructive
+        ? const Color(0xFFD9502B)
+        : colorScheme.primary;
 
     Widget leadingIcon = Icon(_iconFor(menu.actionKey), color: accent);
     if (menu.actionKey == 'notifications' && hasUnread) {
@@ -255,9 +307,9 @@ class _ProfileMenuTile extends StatelessWidget {
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        minTileHeight: 58,
         leading: leadingIcon,
         title: Text(menu.title),
         trailing: const Icon(Icons.chevron_right_rounded),
@@ -278,14 +330,15 @@ class _ProfileMenuTile extends StatelessWidget {
       case 'signOut':
         AppRepositories.auth.signOut().then((_) {
           if (context.mounted) {
-            Navigator.of(context)
-                .pushNamedAndRemoveUntil('/login', (route) => false);
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/login', (route) => false);
           }
         });
       case 'expiry':
         Navigator.of(context).pushNamed('/expiry-management');
       case 'shopping':
-        Navigator.of(context).pushNamed('/shopping-recommendations');
+        AppShell.selectTab(context, 3);
       case 'saved_tips':
         Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => const SavedTipsScreen()),
@@ -323,7 +376,7 @@ class _RulebookCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Row(
@@ -386,8 +439,8 @@ class _CommunityCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 26, 24, 26),
       decoration: BoxDecoration(
-        color: const Color(0xFFDDE4DF),
-        borderRadius: BorderRadius.circular(30),
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,8 +463,7 @@ class _CommunityCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           FilledButton(
-            onPressed: () => Navigator.of(context)
-                .pushNamedAndRemoveUntil('/community', (route) => false),
+            onPressed: () => AppShell.selectTab(context, 2),
             child: const Text('그룹 둘러보기'),
           ),
         ],

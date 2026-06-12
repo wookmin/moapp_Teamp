@@ -17,6 +17,10 @@ class NotificationService {
 
   Future<void> initialize() async {
     if (_initialized || _pluginUnavailable) return;
+    if (kIsWeb) {
+      _pluginUnavailable = true;
+      return;
+    }
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -100,7 +104,6 @@ class NotificationService {
 
     return todayFoods.length;
   }
-
 
   NotificationDetails _notificationDetails() {
     return const NotificationDetails(

@@ -12,6 +12,8 @@ abstract class SharedFridgeRepository {
     required String code,
   });
 
+  Future<SharedFridgeInvite> fetchInviteByCode(String code);
+
   Future<SharedFridge> acceptInvite({
     required String ownerUid,
     required String code,
