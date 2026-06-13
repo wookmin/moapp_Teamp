@@ -275,7 +275,7 @@ class _StatusInfo {
 
   factory _StatusInfo.fromScore(int score) {
     if (score >= 80) {
-      return const _StatusInfo(message: '신선해요', color: Color(0xFF0ABF53));
+      return const _StatusInfo(message: '신선해요', color: Color(0xFF059669));
     }
     if (score >= 50) {
       return const _StatusInfo(message: '조심하세요', color: Color(0xFFFF8800));
@@ -459,14 +459,14 @@ class _AiRecipeCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.soup_kitchen_outlined,
-                color: Color(0xFF078A3C),
+                color: Color(0xFF047857),
                 size: 18,
               ),
               const SizedBox(width: 6),
               Text(
                 '냉장고 재료로 만든 오늘의 추천',
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: const Color(0xFF078A3C),
+                  color: const Color(0xFF047857),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -476,7 +476,7 @@ class _AiRecipeCard extends StatelessWidget {
                 tooltip: '다른 레시피 추천받기',
                 icon: const Icon(
                   Icons.refresh_rounded,
-                  color: Color(0xFF078A3C),
+                  color: Color(0xFF047857),
                   size: 20,
                 ),
               ),
@@ -525,7 +525,7 @@ class _AiRecipeCard extends StatelessWidget {
                       child: Text(
                         ing,
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: const Color(0xFF078A3C),
+                          color: const Color(0xFF047857),
                         ),
                       ),
                     ),
@@ -554,7 +554,7 @@ class _AiRecipeCard extends StatelessWidget {
                       height: 22,
                       margin: const EdgeInsets.only(right: 8, top: 1),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF078A3C),
+                        color: const Color(0xFF047857),
                         shape: BoxShape.circle,
                       ),
                       child: Center(

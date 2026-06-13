@@ -327,7 +327,7 @@ class _NotificationStyle {
       ExpiryNotificationKind.upcoming => _NotificationStyle(
         icon: Icons.info_outline_rounded,
         backgroundColor: const Color(0xFFE8F5E9),
-        iconColor: const Color(0xFF0ABF53),
+        iconColor: const Color(0xFF059669),
         title: '${food.name} ${food.daysLeft}일 후 만료 예정',
         subtitle: '아직 여유가 있어요.',
       ),

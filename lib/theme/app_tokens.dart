@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 abstract final class AppColors {
   // ── 브랜드 (프레시 그린) ──
-  static const brand = Color(0xFF0ABF53);
-  static const brandDark = Color(0xFF078A3C);
-  static const brandSoft = Color(0xFFE6F9EE);
+  static const brand = Color(0xFF059669);
+  static const brandDark = Color(0xFF047857);
+  static const brandSoft = Color(0xFFECFDF5);
 
   // ── 배경 ──
   static const canvas = Color(0xFFF4F5F7);
@@ -23,8 +23,8 @@ abstract final class AppColors {
   static const dangerSoft = Color(0xFFFFEBEE);
   static const warning = Color(0xFFFF8800);
   static const warningSoft = Color(0xFFFFF3E0);
-  static const success = Color(0xFF0ABF53);
-  static const successSoft = Color(0xFFE6F9EE);
+  static const success = Color(0xFF059669);
+  static const successSoft = Color(0xFFECFDF5);
   static const info = Color(0xFF3182F6);
   static const infoSoft = Color(0xFFE8F3FF);
 }

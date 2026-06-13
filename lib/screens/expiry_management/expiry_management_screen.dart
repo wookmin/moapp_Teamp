@@ -346,7 +346,7 @@ class _ExpiryCalendar extends StatelessWidget {
   Color _markerColor(FoodItem food) {
     if (food.daysLeft < 0) return const Color(0xFFF04452);
     if (food.daysLeft <= 2) return const Color(0xFFFF8800);
-    return const Color(0xFF0ABF53);
+    return const Color(0xFF059669);
   }
 }
 
