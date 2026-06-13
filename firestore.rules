@@ -32,6 +32,29 @@ service cloud.firestore {
         );
     }
 
+    function validNickname() {
+      return request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 2
+        && request.resource.data.nickname.size() <= 12
+        && request.resource.data.nickname.matches('^[가-힣A-Za-z0-9_]+$')
+        && request.resource.data.name == request.resource.data.nickname;
+    }
+
+    function nicknameFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['nickname', 'name', 'nicknameChangedAt']);
+    }
+
+    function canChangeNickname() {
+      return validNickname()
+        && request.resource.data.nicknameChangedAt == request.time
+        && (
+          !('nickname' in resource.data)
+          || !('nicknameChangedAt' in resource.data)
+          || request.time >= resource.data.nicknameChangedAt + duration.value(7, 'd')
+        );
+    }
+
     match /ingredient_search_index/{keywordId} {
       allow read: if true;
       allow write: if false;
@@ -76,7 +99,22 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && (
+          !('nickname' in request.resource.data)
+          || (
+            validNickname()
+            && request.resource.data.nicknameChangedAt == request.time
+          )
+        );
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && (
+          !nicknameFieldsChanged()
+          || canChangeNickname()
+        );
 
       match /food_items/{foodItemId} {
         allow read: if isFridgeMember(userId);

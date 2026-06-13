@@ -10,6 +10,7 @@ import '../../widgets/shimmer_card.dart';
 import '../../widgets/app_shell.dart';
 import '../community/saved_tips_screen.dart';
 import '../notifications/notification_center_screen.dart';
+import 'nickname_setup_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.embedded = false, this.isActive = true});
@@ -48,6 +49,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openNicknameSettings() async {
+    final status = await AppRepositories.profile.fetchNicknameStatus();
+    if (!mounted) return;
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => NicknameSetupScreen(status: status)),
+    );
+    if (changed == true && mounted) {
+      setState(_refreshProfile);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,7 +88,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   message: '잠시 후 다시 시도해주세요.',
                 )
               else ...[
-                _ProfileHeaderCard(profile: profile),
+                _ProfileHeaderCard(
+                  profile: profile,
+                  onTap: _openNicknameSettings,
+                ),
                 const SizedBox(height: 16),
                 _FreshnessScoreCard(score: profile.freshnessScore),
                 const SizedBox(height: 30),
@@ -102,69 +117,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class _ProfileHeaderCard extends StatelessWidget {
-  const _ProfileHeaderCard({required this.profile});
+  const _ProfileHeaderCard({required this.profile, required this.onTap});
   final ProfileData profile;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: colorScheme.primaryContainer,
-            child: Text(
-              _initialFor(profile.name),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(profile.name, style: theme.textTheme.titleLarge),
-                const SizedBox(height: 2),
-                Text(
-                  profile.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: colorScheme.primaryContainer,
+                child: Text(
+                  _initialFor(profile.name),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                if (profile.badges.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: profile.badges
-                        .take(2)
-                        .map((label) => _ProfileChip(label: label))
-                        .toList(),
-                  ),
-                ],
-              ],
-            ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(profile.name, style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 2),
+                    Text(
+                      profile.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (profile.badges.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: profile.badges
+                            .take(2)
+                            .map((label) => _ProfileChip(label: label))
+                            .toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
+        ),
       ),
     );
   }
