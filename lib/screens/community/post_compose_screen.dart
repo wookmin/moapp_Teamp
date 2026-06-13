@@ -21,12 +21,7 @@ class PostComposeScreen extends StatefulWidget {
 }
 
 class _PostComposeScreenState extends State<PostComposeScreen> {
-  static const List<String> _badgeOptions = [
-    '신선한 선택',
-    '전문가 팁',
-    '주의사항',
-    '레시피',
-  ];
+  static const List<String> _badgeOptions = ['신선한 선택', '전문가 팁', '주의사항', '레시피'];
 
   final _titleController = TextEditingController();
   final _excerptController = TextEditingController();
@@ -55,9 +50,9 @@ class _PostComposeScreenState extends State<PostComposeScreen> {
       setState(() => _pickedImage = picked);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('사진을 불러올 수 없어요: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('사진을 불러올 수 없어요: $error')));
     }
   }
 
@@ -70,9 +65,7 @@ class _PostComposeScreenState extends State<PostComposeScreen> {
     if (_pickedImage == null) return null;
     final uid = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final ref = FirebaseStorage.instance.ref(
-      'post_images/$uid/$timestamp.jpg',
-    );
+    final ref = FirebaseStorage.instance.ref('post_images/$uid/$timestamp.jpg');
     await ref.putFile(File(_pickedImage!.path));
     return ref.getDownloadURL();
   }
@@ -82,9 +75,9 @@ class _PostComposeScreenState extends State<PostComposeScreen> {
     final excerpt = _excerptController.text.trim();
 
     if (title.isEmpty || excerpt.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목과 본문을 모두 입력해 주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제목과 본문을 모두 입력해 주세요.')));
       return;
     }
 
@@ -108,6 +101,7 @@ class _PostComposeScreenState extends State<PostComposeScreen> {
         id: '',
         title: title,
         author: '@$authorName',
+        authorUid: user?.uid,
         excerpt: excerpt,
         badge: _selectedBadge,
         imageUrl: imageUrl,
@@ -119,9 +113,9 @@ class _PostComposeScreenState extends State<PostComposeScreen> {
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('발행 실패: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('발행 실패: $error')));
       setState(() {
         _isSubmitting = false;
         _submitStatus = '발행';
@@ -213,9 +207,7 @@ class _PostComposeScreenState extends State<PostComposeScreen> {
           TextField(
             controller: _titleController,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              hintText: '예: 고수를 위한 물병 보관법',
-            ),
+            decoration: const InputDecoration(hintText: '예: 고수를 위한 물병 보관법'),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),

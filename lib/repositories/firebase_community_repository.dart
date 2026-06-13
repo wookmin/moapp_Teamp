@@ -14,14 +14,49 @@ class FirebaseCommunityRepository implements CommunityRepository {
       _firestore.collection('posts');
 
   @override
-  Future<List<CommunityPost>> fetchPosts({String filter = 'latest'}) async {
-    final snapshot = await _collection
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-        .get();
-    return snapshot.docs
+  Future<List<CommunityPost>> fetchPosts({
+    String filter = 'latest',
+    String? currentUid,
+  }) async {
+    if (filter == 'mine' && currentUid == null) {
+      return const [];
+    }
+
+    Query<Map<String, dynamic>> query = _collection;
+    switch (filter) {
+      case 'popular':
+        query = query.orderBy('likesCount', descending: true).limit(50);
+      case 'mine':
+        query = query.where('authorUid', isEqualTo: currentUid).limit(50);
+      case 'latest':
+      default:
+        query = query.orderBy('createdAt', descending: true).limit(50);
+    }
+
+    final snapshot = await query.get();
+    final posts = snapshot.docs
         .map((doc) => CommunityPost.fromFirestore(doc.id, doc.data()))
         .toList();
+
+    if (filter == 'popular') {
+      posts.sort((a, b) {
+        final likesComparison = b.likesCount.compareTo(a.likesCount);
+        if (likesComparison != 0) return likesComparison;
+        final commentsComparison = b.commentsCount.compareTo(a.commentsCount);
+        if (commentsComparison != 0) return commentsComparison;
+        return _compareCreatedAtDescending(a, b);
+      });
+    } else if (filter == 'mine') {
+      posts.sort(_compareCreatedAtDescending);
+    }
+
+    return posts;
+  }
+
+  static int _compareCreatedAtDescending(CommunityPost a, CommunityPost b) {
+    final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bTime.compareTo(aTime);
   }
 
   @override

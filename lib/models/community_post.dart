@@ -3,6 +3,7 @@ class CommunityPost {
     required this.id,
     required this.title,
     required this.author,
+    this.authorUid,
     required this.excerpt,
     required this.badge,
     this.imageUrl,
@@ -16,6 +17,7 @@ class CommunityPost {
   final String id;
   final String title;
   final String author;
+  final String? authorUid;
   final String excerpt;
   final String badge;
   final String? imageUrl;
@@ -38,6 +40,7 @@ class CommunityPost {
   Map<String, Object?> toFirestore() => {
     'title': title,
     'author': author,
+    'authorUid': authorUid,
     'excerpt': excerpt,
     'badge': badge,
     'imageUrl': imageUrl,
@@ -58,6 +61,7 @@ class CommunityPost {
       id: id,
       title: data['title'] as String? ?? '',
       author: data['author'] as String? ?? '',
+      authorUid: data['authorUid'] as String?,
       excerpt: data['excerpt'] as String? ?? '',
       badge: data['badge'] as String? ?? '',
       imageUrl: data['imageUrl'] as String?,
