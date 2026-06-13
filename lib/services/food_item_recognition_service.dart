@@ -60,19 +60,25 @@ class FoodItemRecognitionService {
 
   FoodShelfLifePreset? findPreset(String rawName) {
     final normalizedRawName = _normalize(rawName);
+    FoodShelfLifePreset? bestMatch;
+    var bestMatchLength = 0;
 
     for (final preset in foodShelfLifePresets) {
       final names = [preset.name, ...preset.keywords];
       for (final name in names) {
         final normalizedName = _normalize(name);
+        if (normalizedName.isEmpty) continue;
         if (normalizedRawName.contains(normalizedName) ||
             normalizedName.contains(normalizedRawName)) {
-          return preset;
+          if (normalizedName.length > bestMatchLength) {
+            bestMatch = preset;
+            bestMatchLength = normalizedName.length;
+          }
         }
       }
     }
 
-    return null;
+    return bestMatch;
   }
 
   String _normalize(String value) {

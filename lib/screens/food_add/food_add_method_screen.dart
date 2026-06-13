@@ -73,8 +73,7 @@ class FoodAddMethodScreen extends StatelessWidget {
             icon: Icons.receipt_long_rounded,
             title: '영수증으로 한 번에 추가',
             description: '장본 내역에서 냉장고 품목을 찾아드려요.',
-            badge: '다음 단계',
-            onTap: () => _showComingSoon(context, '영수증 OCR'),
+            onTap: () => Navigator.of(context).pushNamed('/add-food/receipt'),
           ),
           _AddMethodCard(
             icon: Icons.qr_code_scanner_rounded,

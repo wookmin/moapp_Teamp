@@ -12,6 +12,7 @@ import 'screens/expiry_management/expiry_management_screen.dart';
 import 'screens/food_add/confirm_food_items_screen.dart';
 import 'screens/food_add/food_add_method_screen.dart';
 import 'screens/food_add/manual_food_add_screen.dart';
+import 'screens/food_add/receipt_ocr_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/storage_search/shared_fridge_invite_screen.dart';
 import 'screens/storage_search/storage_rulebook_screen.dart';
@@ -129,6 +130,7 @@ class _TeamProjectAppState extends State<TeamProjectApp> {
       '/login' => (_) => const LoginScreen(),
       '/add-food' => (_) => const FoodAddMethodScreen(),
       '/add-food/manual' => (_) => const ManualFoodAddScreen(),
+      '/add-food/receipt' => (_) => const ReceiptOcrScreen(),
       '/add-food/confirm' => (_) => const ConfirmFoodItemsScreen(),
       '/expiry-management' => (_) => const ExpiryManagementScreen(),
       '/storage-search' => (_) => const AppShell(initialIndex: 1),
