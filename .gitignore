@@ -47,6 +47,7 @@ Desktop.ini
 
 # Node / local pipeline dependencies
 node_modules/
+/backups/
 
 # Secrets & Local Environment Config
 .env
