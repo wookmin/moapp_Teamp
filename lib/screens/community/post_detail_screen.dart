@@ -395,7 +395,7 @@ class _LikeAndCountBar extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final likeColor = isLiked
-        ? const Color(0xFFE03A47)
+        ? const Color(0xFFF04452)
         : colorScheme.onSurfaceVariant;
     final scrapColor = isScrapped
         ? colorScheme.primary

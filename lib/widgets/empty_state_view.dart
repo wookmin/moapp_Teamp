@@ -42,7 +42,7 @@ class EmptyStateView extends StatelessWidget {
               child: Lottie.network(
                 lottieUrl!,
                 repeat: true,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, e, ___) => Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(

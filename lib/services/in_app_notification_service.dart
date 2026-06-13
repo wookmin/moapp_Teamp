@@ -13,7 +13,7 @@ class InAppNotificationService {
       _showCard(
         title: '유통기한 임박 식재료가 없어요',
         subtitle: '냉장고 상태가 양호합니다 👍',
-        color: const Color(0xFF1B6B47),
+        color: const Color(0xFF0ABF53),
         index: 0,
         total: 1,
       );
@@ -26,10 +26,10 @@ class InAppNotificationService {
       final isExpired = food.daysLeft < 0;
       final isWarning = food.daysLeft > 0 && food.daysLeft <= 2;
       final color = isExpired
-          ? const Color(0xFFC0392B)
+          ? const Color(0xFFF04452)
           : isWarning
-              ? const Color(0xFFD98A00)
-              : const Color(0xFF1B6B47);
+              ? const Color(0xFFFF8800)
+              : const Color(0xFF0ABF53);
       final subtitle = isExpired
           ? '이미 유통기한이 지났어요. 확인해보세요!'
           : food.daysLeft == 0
