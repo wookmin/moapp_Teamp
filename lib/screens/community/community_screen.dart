@@ -40,6 +40,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   void _refresh() {
     _postsFuture = AppRepositories.community.fetchPosts(
       filter: _selectedFilter,
+      currentUid: _currentUid,
     );
   }
 

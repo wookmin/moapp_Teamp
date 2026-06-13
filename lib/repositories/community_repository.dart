@@ -2,7 +2,10 @@ import '../models/community_comment.dart';
 import '../models/community_post.dart';
 
 abstract class CommunityRepository {
-  Future<List<CommunityPost>> fetchPosts({String filter = 'latest'});
+  Future<List<CommunityPost>> fetchPosts({
+    String filter = 'latest',
+    String? currentUid,
+  });
   Future<void> addPost(CommunityPost post);
 
   /// 특정 글의 댓글 목록 (오래된 순)
