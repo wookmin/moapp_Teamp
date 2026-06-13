@@ -90,7 +90,7 @@ class _NotificationBell extends StatelessWidget {
                   width: 9,
                   height: 9,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE03A47),
+                    color: const Color(0xFFF04452),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Theme.of(context).scaffoldBackgroundColor,

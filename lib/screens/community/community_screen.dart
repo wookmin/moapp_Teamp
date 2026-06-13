@@ -248,14 +248,14 @@ class _CommunityPostCard extends StatelessWidget {
     switch (post.badge) {
       case '주의사항':
         return _CardStyle(
-          backgroundColor: const Color(0xFFFCEAEA),
-          accentColor: const Color(0xFFC0392B),
+          backgroundColor: const Color(0xFFFFEBEE),
+          accentColor: const Color(0xFFF04452),
           icon: Icons.warning_amber_rounded,
         );
       case '전문가 팁':
         return _CardStyle(
           backgroundColor: colorScheme.surface,
-          accentColor: const Color(0xFFD98A00),
+          accentColor: const Color(0xFFFF8800),
           icon: Icons.tips_and_updates_rounded,
         );
       default:

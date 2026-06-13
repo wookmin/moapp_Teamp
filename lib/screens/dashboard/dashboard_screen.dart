@@ -107,7 +107,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (!summary.hasConnectedData)
                 const EmptyStateView(
                   icon: Icons.kitchen_outlined,
-                  lottieUrl: 'https://assets9.lottiefiles.com/packages/lf20_ttvteyvs.json',
                   title: '냉장고가 비었어요!',
                   message: '+ 버튼을 눌러 식품을 추가하면\n신선도, 임박 품목, 오늘의 추천이 표시됩니다.',
                 )
@@ -257,7 +256,7 @@ class _CircularScore extends StatelessWidget {
       animationDuration: 900,
       circularStrokeCap: CircularStrokeCap.round,
       progressColor: color,
-      backgroundColor: const Color(0xFFF1EFE8),
+      backgroundColor: const Color(0xFFE5E8EB),
       center: Text(
         '$score%',
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -276,12 +275,12 @@ class _StatusInfo {
 
   factory _StatusInfo.fromScore(int score) {
     if (score >= 80) {
-      return const _StatusInfo(message: '신선해요', color: Color(0xFF1B6B47));
+      return const _StatusInfo(message: '신선해요', color: Color(0xFF059669));
     }
     if (score >= 50) {
-      return const _StatusInfo(message: '조심하세요', color: Color(0xFFD98A00));
+      return const _StatusInfo(message: '조심하세요', color: Color(0xFFFF8800));
     }
-    return const _StatusInfo(message: '관리가 필요해요', color: Color(0xFFC0392B));
+    return const _StatusInfo(message: '관리가 필요해요', color: Color(0xFFF04452));
   }
 }
 
@@ -344,10 +343,10 @@ class _UrgentFoodCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final highlight = food.isUrgent
-        ? const Color(0xFFFCEAEA)
+        ? const Color(0xFFFFEBEE)
         : colorScheme.surface;
     final tagColor = food.isUrgent
-        ? const Color(0xFFC0392B)
+        ? const Color(0xFFF04452)
         : colorScheme.primary;
 
     return Card(
@@ -460,14 +459,14 @@ class _AiRecipeCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.soup_kitchen_outlined,
-                color: Color(0xFF087A52),
+                color: Color(0xFF047857),
                 size: 18,
               ),
               const SizedBox(width: 6),
               Text(
                 '냉장고 재료로 만든 오늘의 추천',
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: const Color(0xFF075D41),
+                  color: const Color(0xFF047857),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -477,7 +476,7 @@ class _AiRecipeCard extends StatelessWidget {
                 tooltip: '다른 레시피 추천받기',
                 icon: const Icon(
                   Icons.refresh_rounded,
-                  color: Color(0xFF087A52),
+                  color: Color(0xFF047857),
                   size: 20,
                 ),
               ),
@@ -487,7 +486,7 @@ class _AiRecipeCard extends StatelessWidget {
           Text(
             recipe!.title,
             style: theme.textTheme.titleLarge?.copyWith(
-              color: const Color(0xFF17201B),
+              color: const Color(0xFF191F28),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -504,7 +503,7 @@ class _AiRecipeCard extends StatelessWidget {
             Text(
               '필요한 재료',
               style: theme.textTheme.labelLarge?.copyWith(
-                color: const Color(0xFF17201B),
+                color: const Color(0xFF191F28),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -526,7 +525,7 @@ class _AiRecipeCard extends StatelessWidget {
                       child: Text(
                         ing,
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: const Color(0xFF075D41),
+                          color: const Color(0xFF047857),
                         ),
                       ),
                     ),
@@ -539,7 +538,7 @@ class _AiRecipeCard extends StatelessWidget {
             Text(
               '조리 순서',
               style: theme.textTheme.labelLarge?.copyWith(
-                color: const Color(0xFF17201B),
+                color: const Color(0xFF191F28),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -555,7 +554,7 @@ class _AiRecipeCard extends StatelessWidget {
                       height: 22,
                       margin: const EdgeInsets.only(right: 8, top: 1),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF087A52),
+                        color: const Color(0xFF047857),
                         shape: BoxShape.circle,
                       ),
                       child: Center(

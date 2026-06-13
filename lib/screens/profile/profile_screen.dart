@@ -277,7 +277,7 @@ class _ProfileMenuTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final accent = menu.isDestructive
-        ? const Color(0xFFD9502B)
+        ? const Color(0xFFF04452)
         : colorScheme.primary;
 
     final leadingIcon = menu.actionKey == 'notifications'
@@ -293,7 +293,7 @@ class _ProfileMenuTile extends StatelessWidget {
                     right: -2,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Color(0xFFE03A47),
+                        color: Color(0xFFF04452),
                         shape: BoxShape.circle,
                       ),
                       child: SizedBox.square(dimension: 9),

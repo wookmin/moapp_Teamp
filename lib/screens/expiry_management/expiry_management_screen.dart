@@ -19,7 +19,6 @@ class ExpiryManagementScreen extends StatefulWidget {
 class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
   late Future<List<FoodItem>> _future;
   String _filter = '전체 품목';
-
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
@@ -35,25 +34,19 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
     });
   }
 
-  /// 날짜 비교 (시간 무시)
   bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  /// 특정 날짜에 만료되는 품목 목록 (캘린더 마커용)
   List<FoodItem> _getEventsForDay(DateTime day, List<FoodItem> allItems) {
     return allItems.where((f) => _isSameDate(f.expiryDate, day)).toList();
   }
 
-  /// 필터 + 선택된 날짜 적용
   List<FoodItem> _applyFilter(List<FoodItem> items) {
-    // 날짜 선택이 있으면 해당 날짜만 표시
     if (_selectedDay != null) {
       return items
           .where((f) => _isSameDate(f.expiryDate, _selectedDay!))
           .toList();
     }
-
-    // 필터 칩 적용
     switch (_filter) {
       case '소비기한 임박':
         return items.where((f) => f.isUrgent && f.daysLeft >= 0).toList();
@@ -77,21 +70,20 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
 
   void _onDaySelected(DateTime selected, DateTime focused) {
     setState(() {
-      // 같은 날짜 다시 탭하면 선택 해제 → 전체 목록
       if (_selectedDay != null && _isSameDate(_selectedDay!, selected)) {
         _selectedDay = null;
       } else {
         _selectedDay = selected;
       }
       _focusedDay = focused;
-      _filter = '전체 품목'; // 날짜 선택 시 필터 초기화
+      _filter = '전체 품목';
     });
   }
 
   void _onFilterTap(String label) {
     setState(() {
       _filter = label;
-      _selectedDay = null; // 필터 선택 시 날짜 선택 해제
+      _selectedDay = null;
     });
   }
 
@@ -113,7 +105,6 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
             return Center(child: Text('오류: ${snapshot.error}'));
           }
@@ -124,7 +115,6 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
-              // 헤더
               Row(
                 children: [
                   Expanded(
@@ -145,20 +135,18 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
               ),
               const SizedBox(height: 16),
 
-              // 캘린더
+              // ── 캘린더 ──
               _ExpiryCalendar(
                 focusedDay: _focusedDay,
                 selectedDay: _selectedDay,
                 allItems: allItems,
                 getEventsForDay: (day) => _getEventsForDay(day, allItems),
                 onDaySelected: _onDaySelected,
-                onPageChanged: (focused) {
-                  _focusedDay = focused;
-                },
+                onPageChanged: (focused) => _focusedDay = focused,
               ),
               const SizedBox(height: 16),
 
-              // 선택된 날짜 표시
+              // ── 선택된 날짜 표시 ──
               if (_selectedDay != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -188,13 +176,12 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
                   ),
                 ),
 
-              // 필터 칩 (날짜 미선택 시에만)
+              // ── 필터 칩 (날짜 미선택 시) ──
               if (_selectedDay == null) ...[
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
-                  children:
-                      ['전체 품목', '소비기한 임박', '기한 만료'].map((label) {
+                  children: ['전체 품목', '소비기한 임박', '기한 만료'].map((label) {
                     return GestureDetector(
                       onTap: () => _onFilterTap(label),
                       child: _FilterChip(
@@ -207,7 +194,7 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // 아이템 목록
+              // ── 아이템 목록 ──
               if (filteredItems.isEmpty)
                 EmptyStateView(
                   icon: Icons.event_note_outlined,
@@ -238,7 +225,7 @@ class _ExpiryManagementScreenState extends State<ExpiryManagementScreen> {
 }
 
 // ──────────────────────────────────────────────
-// 캘린더 위젯
+// 캘린더
 // ──────────────────────────────────────────────
 
 class _ExpiryCalendar extends StatelessWidget {
@@ -267,12 +254,13 @@ class _ExpiryCalendar extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
       child: TableCalendar<FoodItem>(
         locale: 'ko_KR',
         firstDay: DateTime.utc(2024, 1, 1),
-        lastDay: DateTime.utc(2026, 12, 31),
+        lastDay: DateTime.utc(2027, 12, 31),
         focusedDay: focusedDay,
         selectedDayPredicate: (day) =>
             selectedDay != null && isSameDay(selectedDay, day),
@@ -281,18 +269,9 @@ class _ExpiryCalendar extends StatelessWidget {
         onDaySelected: onDaySelected,
         onPageChanged: onPageChanged,
         startingDayOfWeek: StartingDayOfWeek.monday,
-
-        // 헤더 스타일
         headerStyle: HeaderStyle(
           titleCentered: true,
           formatButtonVisible: false,
-          formatButtonDecoration: BoxDecoration(
-            border: Border.all(color: colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          formatButtonTextStyle: theme.textTheme.labelMedium!.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
           titleTextStyle: theme.textTheme.titleMedium!.copyWith(
             fontWeight: FontWeight.w800,
           ),
@@ -305,8 +284,6 @@ class _ExpiryCalendar extends StatelessWidget {
             color: colorScheme.onSurface,
           ),
         ),
-
-        // 요일 스타일
         daysOfWeekStyle: DaysOfWeekStyle(
           weekdayStyle: theme.textTheme.labelSmall!.copyWith(
             color: colorScheme.onSurfaceVariant,
@@ -317,8 +294,6 @@ class _ExpiryCalendar extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-
-        // 날짜 셀 스타일
         calendarStyle: CalendarStyle(
           outsideDaysVisible: false,
           todayDecoration: BoxDecoration(
@@ -340,29 +315,22 @@ class _ExpiryCalendar extends StatelessWidget {
           weekendTextStyle: theme.textTheme.bodyMedium!.copyWith(
             color: colorScheme.error.withValues(alpha: 0.7),
           ),
-          markerDecoration: const BoxDecoration(
-            shape: BoxShape.circle,
-          ),
           markersMaxCount: 3,
         ),
-
-        // 마커 빌더 — 만료 상태별 색상 점
         calendarBuilders: CalendarBuilders(
           markerBuilder: (context, date, events) {
             if (events.isEmpty) return null;
-
             return Positioned(
               bottom: 1,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: events.take(3).map((food) {
-                  final color = _markerColor(food);
                   return Container(
                     width: 6,
                     height: 6,
                     margin: const EdgeInsets.symmetric(horizontal: 1),
                     decoration: BoxDecoration(
-                      color: color,
+                      color: _markerColor(food),
                       shape: BoxShape.circle,
                     ),
                   );
@@ -375,11 +343,10 @@ class _ExpiryCalendar extends StatelessWidget {
     );
   }
 
-  /// 품목 상태에 따른 마커 색상
   Color _markerColor(FoodItem food) {
-    if (food.daysLeft < 0) return const Color(0xFFC0392B); // 만료
-    if (food.daysLeft <= 2) return const Color(0xFFD98A00); // 임박
-    return const Color(0xFF1B6B47); // 여유
+    if (food.daysLeft < 0) return const Color(0xFFF04452);
+    if (food.daysLeft <= 2) return const Color(0xFFFF8800);
+    return const Color(0xFF059669);
   }
 }
 
@@ -402,13 +369,12 @@ class _FilterChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: selected ? colorScheme.primary : colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
+        border: selected ? null : Border.all(color: colorScheme.outlineVariant),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: selected
-              ? colorScheme.onPrimary
-              : colorScheme.onSurfaceVariant,
+          color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -417,7 +383,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────
-// 품목 카드 (Slidable 적용)
+// 품목 카드 (Slidable)
 // ──────────────────────────────────────────────
 
 class _ExpiryCard extends StatelessWidget {
@@ -431,9 +397,9 @@ class _ExpiryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final statusColor = item.daysLeft < 0
-        ? const Color(0xFFC0392B)
+        ? const Color(0xFFF04452)
         : item.isUrgent
-            ? const Color(0xFFD98A00)
+            ? const Color(0xFFFF8800)
             : colorScheme.primary;
 
     return Padding(
@@ -446,7 +412,7 @@ class _ExpiryCard extends StatelessWidget {
           children: [
             SlidableAction(
               onPressed: (_) => onDelete(),
-              backgroundColor: const Color(0xFFC0392B),
+              backgroundColor: const Color(0xFFF04452),
               foregroundColor: Colors.white,
               icon: Icons.delete_rounded,
               label: '삭제',
@@ -496,8 +462,10 @@ class _ExpiryCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),

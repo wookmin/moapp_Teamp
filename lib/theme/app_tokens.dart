@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
-  static const brand = Color(0xFF087A52);
-  static const brandDark = Color(0xFF075D41);
-  static const brandSoft = Color(0xFFDDF3E9);
-  static const canvas = Color(0xFFF7F8F5);
+  // ── 브랜드 (프레시 그린) ──
+  static const brand = Color(0xFF059669);
+  static const brandDark = Color(0xFF047857);
+  static const brandSoft = Color(0xFFECFDF5);
+
+  // ── 배경 ──
+  static const canvas = Color(0xFFF4F5F7);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFF0F3EF);
-  static const outline = Color(0xFFDCE2DD);
-  static const text = Color(0xFF17201B);
-  static const textMuted = Color(0xFF667169);
-  static const danger = Color(0xFFC64132);
-  static const dangerSoft = Color(0xFFFBE9E6);
-  static const warning = Color(0xFFAD7200);
-  static const warningSoft = Color(0xFFFFF2D6);
-  static const info = Color(0xFF256BC4);
-  static const infoSoft = Color(0xFFE4EFFD);
+  static const surfaceMuted = Color(0xFFF4F5F7);
+
+  // ── 테두리 ──
+  static const outline = Color(0xFFE5E8EB);
+
+  // ── 텍스트 ──
+  static const text = Color(0xFF191F28);
+  static const textMuted = Color(0xFF8B95A1);
+
+  // ── 시맨틱 ──
+  static const danger = Color(0xFFF04452);
+  static const dangerSoft = Color(0xFFFFEBEE);
+  static const warning = Color(0xFFFF8800);
+  static const warningSoft = Color(0xFFFFF3E0);
+  static const success = Color(0xFF059669);
+  static const successSoft = Color(0xFFECFDF5);
+  static const info = Color(0xFF3182F6);
+  static const infoSoft = Color(0xFFE8F3FF);
 }
 
 abstract final class AppSpacing {

@@ -783,7 +783,7 @@ class _KamisPriceResultCard extends StatelessWidget {
   static Color _trendColor(PriceTrend trend, ColorScheme colorScheme) {
     final label = trend.trendLabel;
     if (label.contains('하락')) return const Color(0xFF1E6FD9);
-    if (label.contains('상승')) return const Color(0xFFC0392B);
+    if (label.contains('상승')) return const Color(0xFFF04452);
     return colorScheme.primary;
   }
 
@@ -1067,7 +1067,7 @@ class _CartItemTile extends StatelessWidget {
           children: [
             SlidableAction(
               onPressed: (_) => onDelete(),
-              backgroundColor: const Color(0xFFC0392B),
+              backgroundColor: const Color(0xFFF04452),
               foregroundColor: Colors.white,
               icon: Icons.delete_rounded,
               label: '삭제',
@@ -1252,8 +1252,8 @@ class _ShoppingItemCard extends StatelessWidget {
 
   static Color _tagColor(StockStatus status, ColorScheme colorScheme) {
     return switch (status) {
-      StockStatus.out => const Color(0xFFC0392B),
-      StockStatus.low => const Color(0xFFD98A00),
+      StockStatus.out => const Color(0xFFF04452),
+      StockStatus.low => const Color(0xFFFF8800),
       StockStatus.seasonal => colorScheme.primary,
       StockStatus.priceDrop => const Color(0xFF1E6FD9),
     };
@@ -1433,7 +1433,7 @@ class _PriceAdvice {
     if (label.contains('상승')) {
       return _PriceAdvice(
         message: '지금은 살 때가 아니에요!',
-        color: const Color(0xFFC0392B),
+        color: const Color(0xFFF04452),
         icon: Icons.trending_up_rounded,
         detail: detail,
       );
