@@ -12,5 +12,8 @@ class PlaceholderDashboardRepository implements DashboardRepository {
   }
 
   @override
+  Stream<FreshnessSummary> watchFreshnessSummary() => const Stream.empty();
+
+  @override
   Future<Recipe?> recommendRecipe(List<FoodItem> foods) async => null;
 }

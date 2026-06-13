@@ -28,6 +28,15 @@ class FirebaseExpiryRepository implements ExpiryRepository {
   }
 
   @override
+  Stream<List<FoodItem>> watchExpiryItems() {
+    return _collection.orderBy('expiryDate').snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => FoodItem.fromFirestore(doc.id, doc.data()))
+          .toList(),
+    );
+  }
+
+  @override
   Future<void> addFoodItem({
     required String name,
     required DateTime expiryDate,

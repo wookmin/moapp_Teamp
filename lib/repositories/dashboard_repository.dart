@@ -4,6 +4,7 @@ import '../models/recipe.dart';
 
 abstract class DashboardRepository {
   Future<FreshnessSummary> fetchFreshnessSummary();
+  Stream<FreshnessSummary> watchFreshnessSummary();
 
   Future<Recipe?> recommendRecipe(List<FoodItem> foods);
 }

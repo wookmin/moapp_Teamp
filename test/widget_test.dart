@@ -35,6 +35,25 @@ void main() {
     expect(FreshnessCalculator.calculate(foods), 50);
   });
 
+  test('freshness is 100 when there are no urgent foods', () {
+    final now = DateTime.now();
+    final foods = [
+      FoodItem(
+        id: 'three-days',
+        name: '3일 남은 재료',
+        expiryDate: now.add(const Duration(days: 4)),
+      ),
+      FoodItem(
+        id: 'seven-days',
+        name: '7일 남은 재료',
+        expiryDate: now.add(const Duration(days: 8)),
+      ),
+    ];
+
+    expect(foods.any((food) => food.isUrgent), isFalse);
+    expect(FreshnessCalculator.calculate(foods), 100);
+  });
+
   test('expiry notifications only include items due within five days', () {
     final now = DateTime.now();
     final notifications = NotificationCenterService.buildNotifications([

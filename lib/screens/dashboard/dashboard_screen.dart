@@ -22,27 +22,12 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late Future<FreshnessSummary> _future;
+  final Stream<FreshnessSummary> _summaryStream =
+      AppRepositories.dashboard.watchFreshnessSummary();
   Recipe? _recommendedRecipe;
   String? _recipeError;
   bool _isRecipeLoading = false;
   bool _hasRequestedRecipe = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  void _refresh() {
-    setState(() {
-      _future = AppRepositories.dashboard.fetchFreshnessSummary();
-      _recommendedRecipe = null;
-      _recipeError = null;
-      _isRecipeLoading = false;
-      _hasRequestedRecipe = false;
-    });
-  }
 
   Future<void> _requestRecipe(List<FoodItem> foods) async {
     if (_isRecipeLoading || foods.isEmpty) return;
@@ -78,7 +63,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _openAddFlow() async {
     await Navigator.of(context).pushNamed('/add-food');
     if (mounted) {
-      _refresh();
       NotificationCenterService.instance.refresh().ignore();
     }
   }
@@ -90,10 +74,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: widget.embedded
           ? null
           : const AppBottomNavigationBar(currentRoute: '/'),
-      body: FutureBuilder<FreshnessSummary>(
-        future: _future,
+      body: StreamBuilder<FreshnessSummary>(
+        stream: _summaryStream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const _DashboardLoadingView();
           }
 

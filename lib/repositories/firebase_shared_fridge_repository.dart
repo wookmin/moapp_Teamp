@@ -62,7 +62,9 @@ class FirebaseSharedFridgeRepository implements SharedFridgeRepository {
     final ownerUid = _uid;
     final owner = _auth.currentUser!;
     final profile = await _user(ownerUid).get();
-    final profileName = profile.data()?['name'] as String?;
+    final profileData = profile.data();
+    final profileName =
+        profileData?['nickname'] as String? ?? profileData?['name'] as String?;
     final ownerName = profileName?.trim().isNotEmpty == true
         ? profileName!.trim()
         : owner.displayName?.trim().isNotEmpty == true

@@ -17,6 +17,24 @@ class FirebaseDashboardRepository implements DashboardRepository {
   final RecipeRecommendationService _recipeService;
 
   @override
+  Stream<FreshnessSummary> watchFreshnessSummary() {
+    return _expiryRepository.watchExpiryItems().map((items) {
+      if (items.isEmpty) {
+        return const FreshnessSummary(score: 0, urgentCount: 0, totalCount: 0);
+      }
+      final urgentFoods = items.where((f) => f.isUrgent).toList();
+      final score = FreshnessCalculator.calculate(items);
+      return FreshnessSummary(
+        score: score,
+        urgentCount: urgentFoods.length,
+        totalCount: items.length,
+        foods: items,
+        urgentFoods: urgentFoods,
+      );
+    });
+  }
+
+  @override
   Future<FreshnessSummary> fetchFreshnessSummary() async {
     // ── 1단계: 냉장고 식재료 가져오기 ──
     List<FoodItem> items;

@@ -9,6 +9,9 @@ class PlaceholderExpiryRepository implements ExpiryRepository {
   Future<List<FoodItem>> fetchExpiryItems() async => const [];
 
   @override
+  Stream<List<FoodItem>> watchExpiryItems() => const Stream.empty();
+
+  @override
   Future<void> addFoodItem({
     required String name,
     required DateTime expiryDate,

@@ -10,12 +10,6 @@ class FoodAddMethodScreen extends StatelessWidget {
 
   static const _recognitionService = FoodItemRecognitionService();
 
-  Future<void> _showComingSoon(BuildContext context, String label) async {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label 기능은 다음 단계에서 연결할게요.')));
-  }
-
   Future<void> _openRecentFoods(BuildContext context) async {
     final items = await AppRepositories.expiry.fetchExpiryItems();
     if (!context.mounted) {
@@ -76,13 +70,6 @@ class FoodAddMethodScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).pushNamed('/add-food/receipt'),
           ),
           _AddMethodCard(
-            icon: Icons.qr_code_scanner_rounded,
-            title: '바코드 스캔',
-            description: '가공식품 정보를 빠르게 불러와요.',
-            badge: '다음 단계',
-            onTap: () => _showComingSoon(context, '바코드 스캔'),
-          ),
-          _AddMethodCard(
             icon: Icons.edit_note_rounded,
             title: '직접 추가',
             description: '재료명을 검색하거나 자주 쓰는 재료를 골라요.',
@@ -106,14 +93,12 @@ class _AddMethodCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.onTap,
-    this.badge,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final VoidCallback onTap;
-  final String? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -150,13 +135,6 @@ class _AddMethodCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (badge != null) ...[
-                          const SizedBox(width: 8),
-                          Chip(
-                            label: Text(badge!),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 4),

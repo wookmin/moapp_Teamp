@@ -21,7 +21,8 @@ class StorageSearchScreen extends StatefulWidget {
 }
 
 class _StorageSearchScreenState extends State<StorageSearchScreen> {
-  late Future<List<FoodItem>> _foodsFuture;
+  final Stream<List<FoodItem>> _foodsStream =
+      AppRepositories.expiry.watchExpiryItems();
   late Future<List<SharedFridge>> _sharedFridgesFuture;
   Future<List<FoodItem>>? _sharedFoodsFuture;
   SharedFridge? _selectedSharedFridge;
@@ -30,19 +31,11 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _foodsFuture = AppRepositories.expiry.fetchExpiryItems();
     _sharedFridgesFuture = AppRepositories.sharedFridges.fetchMySharedFridges();
-  }
-
-  void _refresh() {
-    setState(() {
-      _foodsFuture = AppRepositories.expiry.fetchExpiryItems();
-    });
   }
 
   Future<void> _openAddFood() async {
     await Navigator.of(context).pushNamed('/add-food');
-    if (mounted) _refresh();
   }
 
   void _refreshSharedFridges() {
@@ -318,10 +311,10 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
               children: [
                 _ShareMyFridgeCard(onShare: _shareMyFridge),
                 const SizedBox(height: 18),
-                FutureBuilder<List<FoodItem>>(
-                  future: _foodsFuture,
+                StreamBuilder<List<FoodItem>>(
+                  stream: _foodsStream,
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Padding(
                         padding: EdgeInsets.only(top: 100),
                         child: Center(child: CircularProgressIndicator()),
@@ -335,11 +328,6 @@ class _StorageSearchScreenState extends State<StorageSearchScreen> {
                         message: snapshot.error.toString().replaceFirst(
                           'Exception: ',
                           '',
-                        ),
-                        action: TextButton.icon(
-                          onPressed: _refresh,
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('다시 시도'),
                         ),
                       );
                     }
